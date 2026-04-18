@@ -1,55 +1,55 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { jsPDF } from "jspdf";
 
-// ── Book introductions ────────────────────────────────────────────────────────
+// ── Book introductions ─────────────────────────────────────────────────────────
 const BOOK_INTROS = {
-  "Gênesis": "Gênesis é o primeiro livro da Bíblia e conta a origem de tudo: do mundo, da humanidade e do povo de Deus. Começa com a criação do universo e histórias como Adão e Eva, Noé e o dilúvio. Depois foca na família de Abraão — pai da fé — cujas promessas continuam com Isaque, Jacó e José. De forma geral, Gênesis fala sobre começos, erros humanos, fé e a relação entre Deus e as pessoas.",
-  "Êxodo": "Êxodo conta a história da libertação do povo de Israel da escravidão no Egito. Deus chama Moisés para liderar o povo e envia as famosas dez pragas sobre o Egito. Após a saída miraculosa — incluindo a abertura do Mar Vermelho — Israel caminha pelo deserto. No monte Sinai, Deus entrega os Dez Mandamentos e instrui a construção do tabernáculo, o lugar de sua presença.",
-  "Levítico": "Levítico é o manual de santidade de Israel. Contém leis sobre sacrifícios, pureza, sacerdócio e festas religiosas. O nome vem dos levitas, a tribo responsável pelo culto. O tema central é a santidade: Deus é santo e chama o seu povo a ser santo também. Embora pareça técnico, Levítico revela o cuidado de Deus em ensinar seu povo a se aproximar dele.",
-  "Números": "Números narra a jornada de Israel pelo deserto entre o Sinai e a terra prometida. O livro começa com um recenseamento do povo — daí o nome. Registra momentos de fé e muitas reclamações, rebeliões e julgamentos. Mesmo com fracassos, a fidelidade de Deus nunca falha. É uma história de formação de um povo que aprende a confiar em Deus no caminho.",
-  "Deuteronômio": "Deuteronômio são os discursos de despedida de Moisés ao povo de Israel às margens da terra prometida. O nome significa 'segunda lei' — Moisés relembra e aprofunda as leis dadas no Sinai. O livro chama o povo à obediência, ao amor a Deus e à memória do que ele fez. Termina com a morte de Moisés e a passagem da liderança para Josué.",
-  "Josué": "Josué narra a conquista e divisão da terra de Canaã pelo povo de Israel. Josué, sucessor de Moisés, lidera o povo com fé — a travessia do Jordão e a queda de Jericó são momentos marcantes. O livro mostra que as promessas de Deus se cumprem quando o povo caminha em obediência. Termina com o desafio de Josué: 'Eu e minha casa, serviremos ao Senhor.'",
-  "Juízes": "Juízes relata um ciclo repetido na história de Israel: o povo se afasta de Deus, cai em opressão, clama por ajuda e Deus levanta um juiz libertador. Figuras como Débora, Gideão e Sansão aparecem neste livro. É uma narrativa honesta sobre a inconstância humana e a misericórdia persistente de Deus.",
-  "Rute": "Rute é uma história de fidelidade, amor e redenção. Uma mulher moabita chamada Rute escolhe permanecer com sua sogra Noemi. A lealdade de Rute é recompensada quando ela encontra Boaz, um parente redentor que a acolhe. É um livro breve e belo, que mostra como Deus cuida dos humildes.",
-  "1 Samuel": "1 Samuel marca a transição de Israel de uma nação governada por juízes para uma monarquia. O livro acompanha Samuel, que unge os dois primeiros reis: Saul e Davi. O contraste entre Saul e Davi — um homem segundo o coração de Deus — é o coração do livro.",
-  "2 Samuel": "2 Samuel acompanha o reinado de Davi como rei unificado de Israel. É uma história de glórias e fracassos: Davi conquista Jerusalém, mas também comete pecados graves e enfrenta consequências dolorosas dentro de sua própria família.",
-  "1 Reis": "1 Reis começa com o reinado de Salomão em todo o seu esplendor: a construção do Templo e a sabedoria famosa. Mas Salomão se desvia de Deus ao final. Após sua morte, o reino se divide. O livro termina com a figura do profeta Elias.",
-  "2 Reis": "2 Reis continua a história do reino dividido. O livro culmina com dois eventos devastadores: a queda do reino do norte pelos assírios e a queda de Jerusalém pelos babilônios, com o povo levado ao exílio.",
-  "1 Crônicas": "1 Crônicas retoma a história de Israel com foco teológico, começando com genealogias que vão de Adão até Davi. O livro enfatiza o reinado de Davi e sua preparação para a construção do Templo.",
-  "2 Crônicas": "2 Crônicas narra o reinado de Salomão e a construção do Templo, depois acompanha os reis de Judá até a queda de Jerusalém. Diferente de Reis, destaca os momentos de reforma e renovação espiritual.",
-  "Esdras": "Esdras narra o retorno dos judeus do exílio na Babilônia para Jerusalém. A primeira onda foca na reconstrução do Templo. A segunda é liderada pelo próprio Esdras, escriba e sacerdote que ensina a Lei de Deus ao povo.",
+  "Gênesis": "Gênesis é o primeiro livro da Bíblia e conta a origem de tudo: do mundo, da humanidade e do povo de Deus. Começa com a criação do universo e histórias como Adão e Eva, Noé e o dilúvio. Depois foca na família de Abraão — pai da fé — cujas promessas continuam com Isaque, Jacó e José.",
+  "Êxodo": "Êxodo conta a história da libertação do povo de Israel da escravidão no Egito. Deus chama Moisés para liderar o povo e envia as famosas dez pragas. Após a saída miraculosa, Israel caminha pelo deserto e recebe os Dez Mandamentos no Sinai.",
+  "Levítico": "Levítico é o manual de santidade de Israel. Contém leis sobre sacrifícios, pureza, sacerdócio e festas religiosas. O tema central é a santidade: Deus é santo e chama o seu povo a ser santo também.",
+  "Números": "Números narra a jornada de Israel pelo deserto entre o Sinai e a terra prometida. Registra momentos de fé e muitas reclamações, rebeliões e julgamentos. Mesmo com fracassos, a fidelidade de Deus nunca falha.",
+  "Deuteronômio": "Deuteronômio são os discursos de despedida de Moisés ao povo de Israel. Moisés relembra e aprofunda as leis dadas no Sinai. O livro chama o povo à obediência e ao amor a Deus. Termina com a morte de Moisés.",
+  "Josué": "Josué narra a conquista e divisão da terra de Canaã. Josué lidera o povo com fé — a travessia do Jordão e a queda de Jericó são momentos marcantes. Termina com o desafio: 'Eu e minha casa, serviremos ao Senhor.'",
+  "Juízes": "Juízes relata um ciclo repetido: o povo se afasta de Deus, cai em opressão, clama por ajuda e Deus levanta um juiz libertador. Figuras como Débora, Gideão e Sansão aparecem neste livro.",
+  "Rute": "Rute é uma história de fidelidade, amor e redenção. A moabita Rute escolhe permanecer com sua sogra Noemi. Sua lealdade é recompensada quando ela encontra Boaz, um parente redentor. Rute é antepassada do rei Davi.",
+  "1 Samuel": "1 Samuel marca a transição de Israel para uma monarquia. Samuel unge os dois primeiros reis: Saul e Davi. O contraste entre Saul — que desobedece — e Davi — um homem segundo o coração de Deus — é o coração do livro.",
+  "2 Samuel": "2 Samuel acompanha o reinado de Davi como rei unificado de Israel. É uma história de glórias e fracassos: Davi conquista Jerusalém e recebe promessas eternas, mas também comete pecados graves.",
+  "1 Reis": "1 Reis começa com o reinado de Salomão em todo o seu esplendor: a construção do Templo e a sabedoria famosa. Após sua morte, o reino se divide. O livro termina com a figura do profeta Elias.",
+  "2 Reis": "2 Reis continua a história do reino dividido. O livro culmina com a queda do reino do norte pelos assírios e a queda de Jerusalém pelos babilônios, com o povo levado ao exílio.",
+  "1 Crônicas": "1 Crônicas retoma a história de Israel com foco teológico, começando com genealogias de Adão até Davi. O livro enfatiza o reinado de Davi e sua preparação para a construção do Templo.",
+  "2 Crônicas": "2 Crônicas narra o reinado de Salomão e a construção do Templo, depois acompanha os reis de Judá. Destaca os momentos de reforma espiritual. O livro termina com o decreto de Ciro permitindo o retorno do povo.",
+  "Esdras": "Esdras narra o retorno dos judeus do exílio na Babilônia para Jerusalém. A primeira onda foca na reconstrução do Templo. A segunda é liderada pelo próprio Esdras, escriba e sacerdote.",
   "Neemias": "Neemias é a história de um homem de oração e ação. Copeiro do rei persa, Neemias obtém permissão para reconstruir os muros de Jerusalém e lidera a obra apesar de forte oposição.",
   "Ester": "Ester é uma história de coragem e providência divina. Uma jovem judia se torna rainha da Pérsia e arrisca a vida para salvar seu povo de um decreto de extermínio. 'Para um momento como este' resume a mensagem central.",
   "Jó": "Jó trata do sofrimento humano e da soberania de Deus. Jó, um homem justo, perde tudo. O próprio Deus responde a Jó do meio do redemoinho. Jó não recebe todas as respostas, mas encontra Deus — e isso é suficiente.",
   "Salmos": "Salmos é o livro de canções e orações de Israel — e da humanidade. São 150 poemas que expressam toda a gama de emoções humanas diante de Deus: alegria, lamento, gratidão, desespero, confiança e adoração.",
   "Provérbios": "Provérbios é um manual de sabedoria para a vida prática. Escrito principalmente por Salomão, ensina como viver com integridade, sabedoria e temor a Deus no dia a dia. A sabedoria começa com o 'temor ao Senhor'.",
-  "Eclesiastes": "Eclesiastes é a reflexão de um rei sábio sobre o sentido da vida. 'Vaidade das vaidades' é o mote do livro — sem Deus, tudo é fugaz. A conclusão é simples e profunda: teme a Deus e guarda seus mandamentos.",
-  "Cantares": "Cantares é um poema lírico sobre o amor entre um homem e uma mulher. Seu lugar na Bíblia fala da beleza e santidade do amor humano. Ao longo da história, também foi lido como uma metáfora do amor de Deus pelo seu povo.",
-  "Isaías": "Isaías é o maior dos profetas escritores, chamado de 'o Evangelho do Antigo Testamento'. Os capítulos 40-66 trazem consolação profunda e as famosas profecias do Servo Sofredor, que apontam para Jesus com clareza impressionante.",
-  "Jeremias": "Jeremias foi chamado de 'profeta das lágrimas'. Sua missão foi anunciar o juízo de Deus sobre Judá. Ele sofreu perseguições e rejeição, mas também profetizou uma nova aliança que Deus faria com seu povo.",
-  "Lamentações": "Lamentações são cinco poemas de luto pela destruição de Jerusalém. No coração do livro há uma declaração de esperança: 'As misericórdias do Senhor não têm fim; renovam-se a cada manhã.' O lamento não nega a fé.",
-  "Ezequiel": "Ezequiel foi um profeta que ministrou entre os exilados na Babilônia. Seu livro é cheio de visões extraordinárias — a glória de Deus, o vale dos ossos secos, o templo celestial. Ele anunciou julgamento e também restauração.",
+  "Eclesiastes": "Eclesiastes é a reflexão de um rei sábio sobre o sentido da vida. 'Vaidade das vaidades' é o mote — sem Deus, tudo é fugaz. A conclusão: teme a Deus e guarda seus mandamentos.",
+  "Cantares": "Cantares é um poema lírico sobre o amor entre um homem e uma mulher. Seu lugar na Bíblia fala da beleza e santidade do amor humano. Ao longo da história, também foi lido como metáfora do amor de Deus pelo seu povo.",
+  "Isaías": "Isaías é o maior dos profetas escritores, chamado de 'o Evangelho do Antigo Testamento'. Os capítulos 40-66 trazem consolação profunda e as famosas profecias do Servo Sofredor, que apontam para Jesus.",
+  "Jeremias": "Jeremias foi chamado de 'profeta das lágrimas'. Sua missão foi anunciar o juízo de Deus sobre Judá. Ele sofreu perseguições e rejeição, mas também profetizou uma nova aliança gravada no coração.",
+  "Lamentações": "Lamentações são cinco poemas de luto pela destruição de Jerusalém. No coração do livro há uma declaração de esperança: 'As misericórdias do Senhor não têm fim; renovam-se a cada manhã.'",
+  "Ezequiel": "Ezequiel foi um profeta que ministrou entre os exilados na Babilônia. Seu livro é cheio de visões extraordinárias — a glória de Deus, o vale dos ossos secos, o templo celestial.",
   "Daniel": "Daniel foi levado jovem para a Babilônia e manteve-se fiel a Deus. Seu livro tem duas partes: histórias de fidelidade (a fornalha, a cova dos leões) e visões apocalípticas sobre impérios e o reino de Deus.",
   "Oséias": "Oséias foi chamado a casar com uma mulher infiel como símbolo do relacionamento de Deus com Israel. O amor persistente de Oséias por sua esposa ilustra o amor inabalável de Deus pelo seu povo.",
-  "Joel": "Joel profetizou após uma invasão devastadora de gafanhotos. Ele interpreta o desastre como chamado ao arrependimento e anuncia que Deus derramará seu Espírito sobre toda a carne — citado por Pedro no Pentecostes.",
-  "Amós": "Amós era um pastor quando Deus o chamou para profetizar. Seu recado foi contundente: Deus não aceita adoração religiosa acompanhada de injustiça social. 'Que a justiça flua como água' — essa é a exigência de Deus.",
-  "Obadias": "Obadias é o menor livro do Antigo Testamento — apenas 21 versículos. É uma profecia de julgamento contra Edom, nação vizinha que se alegrou com a queda de Jerusalém. Também promete restauração para o povo de Deus.",
-  "Jonas": "Jonas é a história do único profeta enviado a uma nação estrangeira. Chamado a pregar em Nínive, Jonas foge na direção oposta. Engolido por um grande peixe, ele finalmente obedece. O livro questiona: você quer a graça de Deus só para você?",
-  "Miquéias": "Miquéias condena a corrupção e injustiça social, mas anuncia esperança messiânica. O resumo mais famoso da fé está em Miquéias 6.8: 'Agir com justiça, amar a misericórdia e andar humildemente com Deus.'",
-  "Naum": "Naum profetizou a queda de Nínive, capital da Assíria. O livro afirma que Deus é lento para irar-se, mas não deixa impune os que persistem no mal. Nínive caiu em 612 a.C., exatamente como profetizado.",
-  "Habacuque": "Habacuque ousa questionar Deus diretamente. O livro é um diálogo honesto entre o profeta e Deus. A resposta divina convida à confiança: 'O justo viverá pela sua fé.' Termina com um dos mais belos hinos de confiança da Bíblia.",
+  "Joel": "Joel profetizou após uma invasão devastadora de gafanhotos. Ele interpreta o desastre como chamado ao arrependimento e anuncia que Deus derramará seu Espírito sobre toda a carne.",
+  "Amós": "Amós era um pastor quando Deus o chamou para profetizar. Seu recado foi contundente: Deus não aceita adoração religiosa acompanhada de injustiça social. 'Que a justiça flua como água.'",
+  "Obadias": "Obadias é o menor livro do Antigo Testamento — apenas 21 versículos. É uma profecia de julgamento contra Edom, nação vizinha que se alegrou com a queda de Jerusalém.",
+  "Jonas": "Jonas é a história do único profeta enviado a uma nação estrangeira. Chamado a pregar em Nínive, Jonas foge. Engolido por um grande peixe, ele finalmente obedece. O livro questiona: você quer a graça de Deus só para você?",
+  "Miquéias": "Miquéias condena a corrupção e injustiça, mas anuncia esperança messiânica. O resumo mais famoso da fé está em Miquéias 6.8: 'Agir com justiça, amar a misericórdia e andar humildemente com Deus.'",
+  "Naum": "Naum profetizou a queda de Nínive, capital da Assíria. O livro afirma que Deus é lento para irar-se, mas não deixa impune os que persistem no mal.",
+  "Habacuque": "Habacuque ousa questionar Deus diretamente. O livro é um diálogo honesto entre o profeta e Deus. A resposta divina convida à confiança: 'O justo viverá pela sua fé.'",
   "Sofonias": "Sofonias anuncia o 'Dia do Senhor' sobre Judá e as nações. Mas o livro termina com beleza: em Sofonias 3.17, Deus declara que se alegra sobre o seu povo com cantos.",
-  "Ageu": "Ageu profetizou logo após o retorno do exílio, quando o povo havia deixado o Templo em ruínas. Com dois sermões práticos, convoca o povo a retomar a obra. O livro ensina sobre prioridades na vida com Deus.",
+  "Ageu": "Ageu profetizou logo após o retorno do exílio, quando o povo havia deixado o Templo em ruínas. Com dois sermões práticos, convoca o povo a retomar a obra e lembra que Deus está com eles.",
   "Zacarias": "Zacarias profetizou para encorajar o povo no retorno do exílio. Seu livro é cheio de visões simbólicas e profecias messiânicas impressionantes — o rei em um jumento, o pastor traído por 30 moedas de prata.",
   "Malaquias": "Malaquias é o último livro do Antigo Testamento. O povo estava em apatia espiritual. Malaquias termina anunciando a vinda de um mensageiro — cumprida em João Batista.",
   "Mateus": "Mateus apresenta Jesus como o Messias prometido. O livro está estruturado em cinco grandes discursos, sendo o primeiro o Sermão do Monte. Termina com a Grande Comissão: ir e fazer discípulos de todas as nações.",
   "Marcos": "Marcos é o Evangelho mais curto e dinâmico. Apresenta Jesus como um servo poderoso em ação: curando, ensinando e exercendo autoridade. O ponto central: 'Quem é este homem?' — a resposta está na cruz.",
-  "Lucas": "Lucas escreveu o Evangelho mais completo sobre a humanidade de Jesus. Ele dá voz a quem a sociedade ignorava: mulheres, pobres, samaritanos, pecadores. Parábolas exclusivas como o Filho Pródigo e o Bom Samaritano aparecem aqui.",
-  "João": "João é mais reflexivo e teológico. Começa com 'No princípio era o Verbo.' Sete sinais milagrosos e sete 'Eu sou' de Jesus marcam o livro. O propósito: que o leitor creia que Jesus é o Cristo e, crendo, tenha vida em seu nome.",
+  "Lucas": "Lucas escreveu o Evangelho mais completo sobre a humanidade de Jesus. Ele dá voz a quem a sociedade ignorava: mulheres, pobres, samaritanos, pecadores. O Filho Pródigo e o Bom Samaritano aparecem aqui.",
+  "João": "João é mais reflexivo e teológico. Começa com 'No princípio era o Verbo.' Sete sinais milagrosos e sete 'Eu sou' de Jesus marcam o livro. O propósito: que o leitor creia que Jesus é o Cristo e tenha vida em seu nome.",
   "Atos": "Atos é a história do nascimento e expansão da Igreja. Começa com o Pentecostes em Jerusalém. De lá, a mensagem de Jesus se espalha pelo mundo — especialmente através do ministério do apóstolo Paulo.",
-  "Romanos": "Romanos é a mais sistemática das cartas de Paulo — uma exposição completa do evangelho. Paulo apresenta o problema do pecado, a solução na justificação pela fé em Cristo e a vida nova pelo Espírito.",
+  "Romanos": "Romanos é a mais sistemática das cartas de Paulo — uma exposição completa do evangelho. Paulo apresenta o problema do pecado, a solução na justificação pela fé e a vida nova pelo Espírito.",
   "1 Coríntios": "1 Coríntios foi escrita para uma igreja dividida e cheia de problemas. Paulo responde com sabedoria e firmeza, entregando joias como o capítulo 13 sobre o amor e o capítulo 15 sobre a ressurreição.",
-  "2 Coríntios": "2 Coríntios é a carta mais pessoal de Paulo. Ele abre seu coração sobre sofrimentos, fraquezas e graça. 'A minha graça é suficiente para ti' é dita a Paulo em meio a suas fraquezas.",
+  "2 Coríntios": "2 Coríntios é a carta mais pessoal de Paulo. Ele abre seu coração sobre sofrimentos, fraquezas e graça. 'A minha graça é suficiente para ti' é dita em meio a suas fraquezas.",
   "Gálatas": "Gálatas é o 'manifesto da liberdade cristã'. Paulo escreve com urgência: somos justificados pela fé, não pelas obras. A vida cristã é fruto do Espírito, não do esforço próprio.",
   "Efésios": "Efésios revela o mistério do propósito eterno de Deus: reunir todas as coisas em Cristo. A primeira metade fala das riquezas espirituais em Cristo; a segunda, de como viver à altura dessa vocação.",
   "Filipenses": "Filipenses é a carta da alegria — escrita de dentro de uma prisão. 'Alegrai-vos sempre no Senhor' e 'Posso tudo naquele que me fortalece' são ditos nessa carta.",
@@ -60,8 +60,8 @@ const BOOK_INTROS = {
   "2 Timóteo": "2 Timóteo é provavelmente a última carta de Paulo. 'Combati o bom combate, terminei a corrida, guardei a fé' — palavras finais de um apóstolo fiel.",
   "Tito": "Tito orienta sobre escolha de líderes e vida cristã no contexto social. A mensagem central é que a graça de Deus nos ensina a renunciar à impiedade — a fé genuína transforma o comportamento.",
   "Filemon": "Filemon é a menor carta de Paulo — apenas um capítulo. É um apelo para que Filemon receba de volta Onésimo, seu escravo fugido que se converteu. Uma carta sobre perdão e reconciliação.",
-  "Hebreus": "Hebreus foi escrita para cristãos de origem judaica. O argumento central: Jesus é superior a tudo. Ele é o sumo sacerdote perfeito. O famoso 'hall da fé' do capítulo 11 celebra os heróis da fé ao longo das eras.",
-  "Tiago": "Tiago é uma carta prática sobre fé que se prova em ações. 'A fé sem obras é morta.' O livro trata do uso da língua, favoritismo, riqueza e oração. A fé genuína produz frutos visíveis na vida.",
+  "Hebreus": "Hebreus foi escrita para cristãos de origem judaica. O argumento central: Jesus é superior a tudo. Ele é o sumo sacerdote perfeito. O famoso 'hall da fé' do capítulo 11 celebra os heróis da fé.",
+  "Tiago": "Tiago é uma carta prática sobre fé que se prova em ações. 'A fé sem obras é morta.' O livro trata do uso da língua, favoritismo, riqueza e oração. A fé genuína produz frutos visíveis.",
   "1 Pedro": "1 Pedro foi escrita para cristãos enfrentando sofrimento e perseguição. Pedro os chama de 'estrangeiros e peregrinos'. O livro ensina como viver com esperança e santidade em meio à adversidade.",
   "2 Pedro": "2 Pedro alerta contra falsos mestres. Pedro chama os crentes a crescer em conhecimento e virtude, e lembra que a promessa da volta de Cristo é certa.",
   "1 João": "1 João combate heresias e apresenta três testes da vida cristã genuína: crer na verdade sobre Jesus, obedecer aos mandamentos e amar os irmãos. 'Deus é amor' aparece aqui com profundidade.",
@@ -71,9 +71,7 @@ const BOOK_INTROS = {
   "Apocalipse": "Apocalipse é a grande revelação dada ao apóstolo João. Escrito em linguagem simbólica para cristãos sob perseguição, revela que Cristo é o Senhor da história. O ponto central: o Cordeiro venceu. A história termina com Deus habitando com a humanidade para sempre.",
 };
 
-function getBook(reading) {
-  return reading.replace(/\s+\d[\d,-]*$/, "").trim();
-}
+function getBook(r) { return r.replace(/\s+\d[\d,-]*$/, "").trim(); }
 
 const READINGS = [
   "Gênesis 1-3","Gênesis 4-6","Gênesis 7-9","Gênesis 10-12","Gênesis 13-16","Gênesis 17-19","Gênesis 20-22","Gênesis 23-24","Gênesis 25-27","Gênesis 28-30","Gênesis 31-32","Gênesis 33-35","Gênesis 36-37","Gênesis 38-40","Gênesis 41-42","Gênesis 43-45","Gênesis 46-47","Gênesis 48-50",
@@ -124,360 +122,473 @@ const READINGS = [
 const START = new Date(2026, 3, 16);
 const MONTHS_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const MONTHS_SH = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
-
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
 
 const DAYS = READINGS.map((reading, i) => {
   const date = addDays(START, i);
   const m = date.getMonth(), y = date.getFullYear();
-  return {
-    index: i, dayNum: i + 1, date, reading,
-    book: getBook(reading),
-    monthKey: `${y}-${m}`,
-    monthLabel: `${MONTHS_PT[m]} ${y}`,
+  return { index: i, dayNum: i + 1, date, reading, book: getBook(reading),
+    monthKey: `${y}-${m}`, monthLabel: `${MONTHS_PT[m]} ${y}`,
     monthShort: `${MONTHS_SH[m]}/${String(y).slice(2)}`,
-    dateLabel: `${String(date.getDate()).padStart(2,"0")}/${String(m+1).padStart(2,"0")}`,
-  };
+    dateLabel: `${String(date.getDate()).padStart(2,"0")}/${String(m+1).padStart(2,"0")}` };
 });
 
 const MONTHS = [];
 const mMap = {};
 DAYS.forEach(day => {
-  if (!mMap[day.monthKey]) {
-    mMap[day.monthKey] = { key: day.monthKey, label: day.monthLabel, short: day.monthShort, days: [] };
-    MONTHS.push(mMap[day.monthKey]);
-  }
+  if (!mMap[day.monthKey]) { mMap[day.monthKey] = { key: day.monthKey, label: day.monthLabel, short: day.monthShort, days: [] }; MONTHS.push(mMap[day.monthKey]); }
   mMap[day.monthKey].days.push(day);
 });
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// ── Tokens ────────────────────────────────────────────────────────────────────
 const STORAGE_KEY = "deus-todos-os-dias-v1";
-const HEADER_BG   = "#F4D8B4";
-const BODY_BG     = "#F9FAFB";
-const CARD_DONE   = "#F4EEE7";
-const TITLE_CLR   = "#492F1A";
-const TAB_INACT   = "#BF9463";
-const TAB_LINE    = "#FA6C24";
-const ORANGE      = "#FA6C24";
-const BROWN       = "#3D2B1F";
-const GOLD        = "#BF9463";
-const CAL         = "🗓️";
-const calSans     = "'Cal Sans','Inter',sans-serif";
-const inter       = "'Inter',sans-serif";
+const HEADER_BG = "#F4D8B4", BODY_BG = "#F9FAFB", CARD_DONE = "#F4EEE7";
+const TITLE_CLR = "#492F1A", TAB_INACT = "#BF9463", TAB_LINE = "#FA6C24";
+const ORANGE = "#FA6C24", BROWN = "#3D2B1F", GOLD = "#BF9463";
+const CAL = "🗓️";
+const calSans = "'Cal Sans','Inter',sans-serif", inter = "'Inter',sans-serif";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Text colours for the editor palette
+const TEXT_COLORS = [
+  { label:"Preto",      hex:"#000000" }, { label:"Azul escuro", hex:"#1A3D8F" }, { label:"Teal",       hex:"#0F7173" },
+  { label:"Verde",      hex:"#1A6B2E" }, { label:"Laranja",     hex:"#E8501A" }, { label:"Vermelho",   hex:"#B91C1C" },
+  { label:"Roxo",       hex:"#6B21A8" }, { label:"Cinza",       hex:"#6B7280" }, { label:"Azul",       hex:"#2563EB" },
+  { label:"Teal claro", hex:"#0891B2" }, { label:"Verde claro", hex:"#16A34A" }, { label:"Amarelo",    hex:"#CA8A04" },
+  { label:"Vermelho leve","hex":"#DC2626" }, { label:"Lilás",  hex:"#9333EA" },
+  { label:"Branco",     hex:"#FFFFFF" }, { label:"Azul pálido","hex":"#DBEAFE" }, { label:"Ciano pálido","hex":"#CFFAFE" },
+  { label:"Verde pálido","hex":"#DCFCE7" }, { label:"Amarelo pálido","hex":"#FEF9C3" }, { label:"Salmão",   hex:"#FEE2E2" }, { label:"Lavanda",  hex:"#F3E8FF" },
+];
 
-/** Strip HTML tags and decode entities for PDF text */
-function htmlToPlainText(html) {
-  if (!html) return "";
-  return html
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n")
-    .replace(/<\/div>/gi, "\n")
-    .replace(/<li[^>]*>/gi, "• ")
-    .replace(/<\/li>/gi, "\n")
-    .replace(/<\/ol>|<\/ul>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+// Common emojis for the picker
+const EMOJI_LIST = ["😀","😊","🙏","❤️","✨","🔥","📖","⭐","🌟","💡","✅","🎯","🌿","🕊️","💎","🌈","🙌","💪","🤔","😔","😢","🎉","📝","🔑","⚡","🌱","🌺","🍃","☀️","🌙","⛅","🌊","🏔️","🦋","🐑","🦁","🐟","🌾","🍞","🍷","⚔️","🛡️","🏺","📜","🕍","✡️","🕌","🙏","✝️","📿","🎵","🎶","🌻","💐","🌷","🍀","🌍","🌎","🌏"];
+
+// ── PDF generator ─────────────────────────────────────────────────────────────
+function htmlToPdfLines(html, doc, contentW) {
+  if (!html) return [];
+  // Parse into a simple structure: [{text, bold, italic, color, listType, indent}]
+  const parser = new DOMParser();
+  const body = parser.parseFromString(`<div>${html}</div>`, "text/html").body.firstChild;
+  const lines = [];
+  function walk(node, ctx = { bold: false, italic: false, color: "#000000", tag: "p" }) {
+    if (node.nodeType === 3) { // text
+      const text = node.textContent;
+      if (text) lines.push({ text, ...ctx });
+      return;
+    }
+    const tag = node.tagName?.toLowerCase();
+    let newCtx = { ...ctx };
+    if (tag === "b" || tag === "strong") newCtx.bold = true;
+    if (tag === "i" || tag === "em")     newCtx.italic = true;
+    if (tag === "span") {
+      const color = node.style?.color;
+      if (color) newCtx.color = color;
+    }
+    if (tag === "h1" || tag === "h2" || tag === "h3") { newCtx.tag = tag; newCtx.bold = true; }
+    if (tag === "li") newCtx.tag = "li";
+
+    const isBlock = ["p","div","h1","h2","h3","li","br","ul","ol"].includes(tag);
+    if (isBlock && lines.length && lines[lines.length - 1]?.text !== "\n") {
+      lines.push({ text: "\n", ...newCtx });
+    }
+    for (const child of node.childNodes) walk(child, newCtx);
+    if (isBlock) lines.push({ text: "\n", ...newCtx });
+  }
+  for (const child of body.childNodes) walk(child);
+
+  // Group into wrapped segments
+  return lines;
 }
 
-/** Generate PDF for all days in a month that have notes */
 function generateMonthPDF(month, progress) {
   const daysWithNotes = month.days.filter(day => {
     const d = progress[day.index] || {};
     return d.note || d.word || d.verse;
   });
+  if (daysWithNotes.length === 0) { alert("Nenhuma anotação encontrada para este mês."); return; }
 
-  if (daysWithNotes.length === 0) {
-    alert("Nenhuma anotação encontrada para este mês.");
-    return;
-  }
-
-  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const margin = 18;
-  const contentW = pageW - margin * 2;
+  const margin = 18, contentW = pageW - margin * 2;
   let y = margin;
 
-  const addPageIfNeeded = (needed = 10) => {
-    if (y + needed > pageH - margin) {
-      doc.addPage();
-      y = margin;
-    }
-  };
+  const addPage = () => { doc.addPage(); y = margin; };
+  const checkY = (need = 8) => { if (y + need > pageH - margin) addPage(); };
 
-  // ── Cover / title ──
+  // Cover
   doc.setFillColor(244, 216, 180);
-  doc.rect(0, 0, pageW, 50, "F");
+  doc.rect(0, 0, pageW, 48, "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(73, 47, 26);
+  doc.text("✦ Deus Todos os Dias ✦", pageW / 2, 20, { align: "center" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+  doc.text(`Anotações — ${month.label}`, pageW / 2, 30, { align: "center" });
+  doc.setDrawColor(250, 108, 36); doc.setLineWidth(0.5);
+  doc.line(margin, 40, pageW - margin, 40);
+  y = 52;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.setTextColor(73, 47, 26);
-  doc.text("Deus Todos os Dias", pageW / 2, 22, { align: "center" });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.setTextColor(73, 47, 26);
-  doc.text(`Anotações — ${month.label}`, pageW / 2, 32, { align: "center" });
-
-  doc.setDrawColor(250, 108, 36);
-  doc.setLineWidth(0.6);
-  doc.line(margin, 42, pageW - margin, 42);
-
-  y = 58;
-
-  // ── Days ──
   daysWithNotes.forEach((day, idx) => {
     const d = progress[day.index] || {};
-    const noteText  = htmlToPlainText(d.note  || "");
-    const wordText  = (d.word  || "").trim();
-    const verseText = (d.verse || "").trim();
+    checkY(20);
 
-    // Estimate block height to decide on page break
-    const noteLines  = noteText  ? doc.splitTextToSize(noteText, contentW).length  : 0;
-    const wordLines  = wordText  ? doc.splitTextToSize(wordText, contentW).length  : 0;
-    const verseLines = verseText ? doc.splitTextToSize(verseText, contentW).length : 0;
-    const blockH = 14 + (noteText  ? 6 + noteLines  * 5.5 : 0)
-                       + (wordText  ? 6 + wordLines  * 5.5 : 0)
-                       + (verseText ? 6 + verseLines * 5.5 : 0) + 8;
-
-    addPageIfNeeded(Math.min(blockH, 60));
-
-    // Day header bar
+    // Day header
     doc.setFillColor(244, 238, 231);
-    doc.roundedRect(margin, y, contentW, 12, 2, 2, "F");
+    doc.roundedRect(margin, y, contentW, 11, 2, 2, "F");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(73, 47, 26);
+    doc.text(`Dia ${day.dayNum}  —  ${day.reading.toUpperCase()}`, margin + 4, y + 7.5);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(191, 148, 99);
+    doc.text(day.dateLabel, pageW - margin - 3, y + 7.5, { align: "right" });
+    y += 15;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(73, 47, 26);
-    doc.text(`Dia ${day.dayNum}  —  ${day.reading.toUpperCase()}`, margin + 4, y + 8);
+    // Render a field
+    const renderField = (labelText, htmlContent, isPlain = false) => {
+      if (!htmlContent) return;
+      checkY(12);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(73, 47, 26);
+      doc.text(labelText, margin, y); y += 5;
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(191, 148, 99);
-    doc.text(day.dateLabel, pageW - margin - 4, y + 8, { align: "right" });
+      if (isPlain) {
+        doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(60, 60, 60);
+        const wrapped = doc.splitTextToSize(htmlContent, contentW);
+        wrapped.forEach(line => { checkY(6); doc.text(line, margin, y); y += 5.2; });
+        y += 3;
+        return;
+      }
 
-    y += 16;
+      // Parse HTML into segments
+      const segments = htmlToPdfLines(htmlContent, doc, contentW);
+      let lineBuffer = [];
+      let curCtx = null;
 
-    // Notes
-    if (noteText) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.setTextColor(73, 47, 26);
-      doc.text("Anotações da leitura", margin, y);
-      y += 5;
+      const flushLine = () => {
+        if (!lineBuffer.length) return;
+        // Join segments and print
+        let x = margin;
+        let lineH = 0;
+        lineBuffer.forEach(seg => {
+          const fStyle = seg.bold && seg.italic ? "bolditalic" : seg.bold ? "bold" : seg.italic ? "italic" : "normal";
+          doc.setFont("helvetica", fStyle);
+          const sz = seg.tag === "h1" ? 13 : seg.tag === "h2" ? 11 : seg.tag === "h3" ? 10 : 9;
+          doc.setFontSize(sz);
+          // Parse color
+          const hex = seg.color || "#000000";
+          const r = parseInt(hex.slice(1,3),16)||0, g = parseInt(hex.slice(3,5),16)||0, b = parseInt(hex.slice(5,7),16)||0;
+          doc.setTextColor(r, g, b);
+          lineH = Math.max(lineH, sz * 0.4);
+        });
+        checkY(lineH + 2);
+        x = margin;
+        lineBuffer.forEach(seg => {
+          if (seg.text === "\n") return;
+          const fStyle = seg.bold && seg.italic ? "bolditalic" : seg.bold ? "bold" : seg.italic ? "italic" : "normal";
+          const sz = seg.tag === "h1" ? 13 : seg.tag === "h2" ? 11 : seg.tag === "h3" ? 10 : 9;
+          doc.setFont("helvetica", fStyle); doc.setFontSize(sz);
+          const hex = seg.color || "#000000";
+          const r = parseInt(hex.slice(1,3),16)||0, g = parseInt(hex.slice(3,5),16)||0, b = parseInt(hex.slice(5,7),16)||0;
+          doc.setTextColor(r, g, b);
+          const prefix = seg.tag === "li" ? "• " : "";
+          doc.text(prefix + seg.text.replace(/\n/g,""), x, y);
+          x += doc.getTextWidth(prefix + seg.text.replace(/\n/g,""));
+        });
+        y += lineH + 2.5;
+        lineBuffer = [];
+      };
 
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(60, 60, 60);
-      const noteWrapped = doc.splitTextToSize(noteText, contentW);
-      noteWrapped.forEach(line => {
-        addPageIfNeeded(6);
-        doc.text(line, margin, y);
-        y += 5.5;
+      segments.forEach(seg => {
+        if (seg.text === "\n") { flushLine(); } else { lineBuffer.push(seg); }
       });
+      flushLine();
       y += 3;
-    }
+    };
 
-    // Word / summary
-    if (wordText) {
-      addPageIfNeeded(14);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.setTextColor(73, 47, 26);
-      doc.text("Resumo em uma frase", margin, y);
-      y += 5;
+    renderField("Anotações da leitura", d.note);
+    renderField("Resumo em uma frase", d.word, true);
+    renderField("Passagem favorita", d.verse, true);
 
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(9);
-      doc.setTextColor(80, 60, 40);
-      const wordWrapped = doc.splitTextToSize(wordText, contentW);
-      wordWrapped.forEach(line => {
-        addPageIfNeeded(6);
-        doc.text(line, margin, y);
-        y += 5.5;
-      });
-      y += 3;
-    }
-
-    // Verse
-    if (verseText) {
-      addPageIfNeeded(14);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      doc.setTextColor(73, 47, 26);
-      doc.text("Passagem favorita", margin, y);
-      y += 5;
-
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(9);
-      doc.setTextColor(80, 60, 40);
-      const verseWrapped = doc.splitTextToSize(verseText, contentW);
-      verseWrapped.forEach(line => {
-        addPageIfNeeded(6);
-        doc.text(line, margin, y);
-        y += 5.5;
-      });
-      y += 3;
-    }
-
-    // Separator between days
     if (idx < daysWithNotes.length - 1) {
-      addPageIfNeeded(8);
-      doc.setDrawColor(220, 210, 200);
-      doc.setLineWidth(0.3);
-      doc.line(margin, y, pageW - margin, y);
-      y += 6;
+      checkY(6);
+      doc.setDrawColor(220, 210, 200); doc.setLineWidth(0.25);
+      doc.line(margin, y, pageW - margin, y); y += 6;
     }
   });
 
   // Page numbers
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
+  const total = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
     doc.setPage(i);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(191, 148, 99);
-    doc.text(`${i} / ${pageCount}`, pageW / 2, pageH - 8, { align: "center" });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(191, 148, 99);
+    doc.text(`${i} / ${total}`, pageW / 2, pageH - 8, { align: "center" });
   }
-
-  const filename = `deus-todos-os-dias-${month.label.replace(" ", "-").toLowerCase()}.pdf`;
-  doc.save(filename);
+  doc.save(`deus-todos-os-dias-${month.label.toLowerCase().replace(" ","-")}.pdf`);
 }
 
-// ── Global CSS ────────────────────────────────────────────────────────────────
+// ── Global CSS ─────────────────────────────────────────────────────────────────
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Cal+Sans&family=Inter:wght@400;500;600&display=swap');
   *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-  html, body { background:${BODY_BG}; overflow-x:hidden; width:100%; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  html, body { background:${BODY_BG}; overflow-x:hidden; width:100%; -webkit-text-size-adjust:100%; }
   #root { overflow-x:hidden; width:100%; max-width:100vw; }
   ::-webkit-scrollbar { display:none; }
   * { scrollbar-width:none; }
-  @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
-  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-  @keyframes openAccordion { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+  @keyframes slideIn  { from{transform:translateX(100%)} to{transform:translateX(0)} }
+  @keyframes openAcc  { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
 
-  /* Rich text editor */
-  .rte-toolbar { display:flex; gap:4px; padding:7px 10px; background:#F9F5EF; border:1px solid #E2D9C8; border-bottom:none; border-radius:10px 10px 0 0; }
-  .rte-btn { min-width:28px; height:28px; padding:0 6px; border:1px solid #E2D9C8; border-radius:6px; background:#fff; cursor:pointer; font-size:13px; color:${TITLE_CLR}; display:flex; align-items:center; justify-content:center; transition:background .12s; }
-  .rte-btn:hover { background:#F4EEE7; }
-  .rte-btn.active { background:${CARD_DONE}; border-color:${GOLD}; }
-  .rte-editor {
-    min-height:130px; padding:12px 14px;
-    border:1px solid #E2D9C8; border-radius:0 0 10px 10px;
-    outline:none; font-family:${inter}; font-size:16px; color:#1A1A1A;
-    line-height:1.6; background:#fff; transition:border-color .2s;
+  /* ── Notes screen ── */
+  .notes-screen {
+    position:fixed; inset:0; background:#fff; z-index:200;
+    display:flex; flex-direction:column;
+    animation: slideIn .22s cubic-bezier(.32,.72,0,1);
   }
-  .rte-editor:focus { border-color:${ORANGE}; }
-  .rte-editor:empty:before { content:attr(data-placeholder); color:#C4A882; font-style:italic; pointer-events:none; }
-  .rte-editor ul, .rte-editor ol { padding-left:20px; }
-  .rte-editor li { margin:2px 0; }
+  .notes-topbar {
+    display:flex; align-items:center; gap:10px;
+    padding:14px 16px 12px;
+    background:#fff; border-bottom:1px solid #F0EAE0;
+    flex-shrink:0;
+  }
+  .notes-body { flex:1; overflow-y:auto; padding:16px 16px 0; }
+  .notes-footer { padding:12px 16px 32px; display:flex; gap:10px; border-top:1px solid #F0EAE0; flex-shrink:0; }
 
+  /* ── Rich text editor ── */
+  .rte-wrap { border:1px solid #E2D9C8; border-radius:10px; overflow:hidden; }
+  .rte-toolbar {
+    display:flex; align-items:center; gap:2px; flex-wrap:wrap;
+    padding:6px 8px; background:#F9F5EF; border-bottom:1px solid #E2D9C8;
+  }
+  .rte-sep { width:1px; height:20px; background:#E2D9C8; margin:0 3px; flex-shrink:0; }
+  .tb-btn {
+    min-width:30px; height:30px; padding:0 6px; border:1px solid transparent;
+    border-radius:6px; background:transparent; cursor:pointer;
+    font-size:13px; color:${TITLE_CLR}; display:flex; align-items:center; justify-content:center;
+    transition:background .12s; position:relative; flex-shrink:0;
+  }
+  .tb-btn:hover { background:#F4EEE7; border-color:#E2D9C8; }
+  .tb-btn.active { background:#F4EEE7; border-color:${GOLD}; }
+  .rte-editor {
+    min-height:160px; max-height:320px; overflow-y:auto;
+    padding:12px 14px; outline:none;
+    font-family:${inter}; font-size:16px; color:#1A1A1A; line-height:1.7;
+    background:#fff;
+  }
+  .rte-editor:empty:before { content:attr(data-placeholder); color:#C4A882; font-style:italic; pointer-events:none; }
+  .rte-editor ul { list-style:disc; padding-left:20px; }
+  .rte-editor ol { list-style:decimal; padding-left:20px; }
+  .rte-editor h1 { font-size:22px; font-weight:700; margin-bottom:4px; }
+  .rte-editor h2 { font-size:18px; font-weight:700; margin-bottom:4px; }
+  .rte-editor h3 { font-size:15px; font-weight:700; margin-bottom:4px; }
+
+  /* Dropdowns */
+  .tb-dropdown {
+    position:absolute; top:calc(100% + 4px); left:0; z-index:999;
+    background:#fff; border:1px solid #E2D9C8; border-radius:10px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.12); min-width:160px; padding:6px;
+  }
+  .tb-dropdown-item {
+    width:100%; padding:8px 10px; border:none; background:none; cursor:pointer;
+    text-align:left; border-radius:6px; display:flex; align-items:center; gap:8px;
+    font-family:${inter}; font-size:13px; color:#1A1A1A; transition:background .1s;
+  }
+  .tb-dropdown-item:hover { background:#F4EEE7; }
+
+  /* Color picker */
+  .color-grid { display:grid; grid-template-columns:repeat(7,28px); gap:4px; padding:8px; }
+  .color-dot {
+    width:28px; height:28px; border-radius:6px; border:1.5px solid rgba(0,0,0,0.1);
+    cursor:pointer; transition:transform .1s;
+  }
+  .color-dot:hover { transform:scale(1.15); }
+
+  /* Emoji picker */
+  .emoji-picker {
+    position:absolute; top:calc(100% + 4px); left:0; z-index:999;
+    background:#fff; border:1px solid #E2D9C8; border-radius:10px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.12);
+    width:260px; padding:8px;
+  }
+  .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:2px; max-height:180px; overflow-y:auto; }
+  .emoji-btn { font-size:20px; padding:4px; border:none; background:none; cursor:pointer; border-radius:4px; transition:background .1s; text-align:center; }
+  .emoji-btn:hover { background:#F4EEE7; }
+
+  /* Plain inputs */
   .plain-field {
-    width:100%; padding:12px 14px;
-    border:1px solid #E2D9C8; border-radius:10px;
+    width:100%; padding:12px 14px; border:1px solid #E2D9C8; border-radius:10px;
     font-family:${inter}; font-size:16px; color:#1A1A1A;
     outline:none; background:#fff; transition:border-color .2s; line-height:1.6;
   }
   .plain-field:focus { border-color:${ORANGE}; }
   .plain-field::placeholder { color:#C4A882; font-style:italic; }
 
-  .accordion-body { animation: openAccordion .2s ease; }
+  /* Accordion */
+  .acc-body { animation: openAcc .2s ease; }
 `;
 
-// ── Rich text editor component ────────────────────────────────────────────────
+// ── Rich Text Editor ───────────────────────────────────────────────────────────
 function RichTextEditor({ value, onChange }) {
-  const editorRef = useRef(null);
-  const skipSync  = useRef(false);
+  const edRef = useRef(null);
+  const skipRef = useRef(false);
+  const [styleDD, setStyleDD] = useState(false);
+  const [colorDD, setColorDD] = useState(false);
+  const [emojiDD, setEmojiDD] = useState(false);
 
-  // Populate on mount / when day changes
   useEffect(() => {
-    if (editorRef.current) {
-      skipSync.current = true;
-      editorRef.current.innerHTML = value || "";
-      skipSync.current = false;
-    }
-  }, [value]);
+    if (edRef.current) { skipRef.current = true; edRef.current.innerHTML = value || ""; skipRef.current = false; }
+  }, []);  // only on mount
 
-  function exec(cmd, val = null) {
-    editorRef.current?.focus();
-    document.execCommand(cmd, false, val);
-    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  function exec(cmd, val = null) { edRef.current?.focus(); document.execCommand(cmd, false, val); sync(); }
+  function sync() { if (!skipRef.current && edRef.current) onChange(edRef.current.innerHTML); }
+
+  function applyStyle(tag) {
+    edRef.current?.focus();
+    document.execCommand("formatBlock", false, tag);
+    sync(); setStyleDD(false);
   }
+  function applyColor(hex) { exec("foreColor", hex); setColorDD(false); }
+  function insertEmoji(em) { exec("insertText", em); setEmojiDD(false); }
 
-  function onInput() {
-    if (!skipSync.current && editorRef.current) onChange(editorRef.current.innerHTML);
-  }
+  const closeAll = () => { setStyleDD(false); setColorDD(false); setEmojiDD(false); };
 
-  const BtnIcon = ({ cmd, title, children }) => (
-    <button
-      className="rte-btn"
-      title={title}
-      onMouseDown={e => { e.preventDefault(); exec(cmd); }}
-    >
-      {children}
-    </button>
-  );
+  const TEXT_STYLES = [
+    { label:"Texto normal", tag:"p",  fontSize:16, fontWeight:400 },
+    { label:"Título 1",     tag:"h1", fontSize:22, fontWeight:700 },
+    { label:"Título 2",     tag:"h2", fontSize:18, fontWeight:700 },
+    { label:"Título 3",     tag:"h3", fontSize:15, fontWeight:700 },
+  ];
 
   return (
-    <div>
+    <div className="rte-wrap" onClick={e => e.stopPropagation()}>
       <div className="rte-toolbar">
-        <BtnIcon cmd="bold"   title="Negrito"><b>B</b></BtnIcon>
-        <BtnIcon cmd="italic" title="Itálico"><i>I</i></BtnIcon>
-        <div style={{ width:1, background:"#E2D9C8", margin:"0 4px" }} />
-        <BtnIcon cmd="insertUnorderedList" title="Lista com marcadores">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="2" cy="3.5" r="1.2" fill="currentColor"/><rect x="5" y="2.8" width="8" height="1.4" rx=".7" fill="currentColor"/><circle cx="2" cy="7" r="1.2" fill="currentColor"/><rect x="5" y="6.3" width="8" height="1.4" rx=".7" fill="currentColor"/><circle cx="2" cy="10.5" r="1.2" fill="currentColor"/><rect x="5" y="9.8" width="8" height="1.4" rx=".7" fill="currentColor"/></svg>
-        </BtnIcon>
-        <BtnIcon cmd="insertOrderedList" title="Lista numerada">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><text x="0" y="5" fontSize="5" fill="currentColor" fontFamily="monospace">1.</text><rect x="5" y="2.8" width="8" height="1.4" rx=".7" fill="currentColor"/><text x="0" y="9.5" fontSize="5" fill="currentColor" fontFamily="monospace">2.</text><rect x="5" y="7.3" width="8" height="1.4" rx=".7" fill="currentColor"/></svg>
-        </BtnIcon>
+
+        {/* Text style */}
+        <div style={{ position:"relative" }}>
+          <button className={`tb-btn${styleDD?" active":""}`} title="Estilo do texto" onMouseDown={e=>{e.preventDefault();closeAll();setStyleDD(v=>!v);}}>
+            <span style={{ fontFamily:calSans, fontSize:11, whiteSpace:"nowrap" }}>Aa ▾</span>
+          </button>
+          {styleDD && (
+            <div className="tb-dropdown" style={{ minWidth:180 }}>
+              {TEXT_STYLES.map(s => (
+                <button key={s.tag} className="tb-dropdown-item" style={{ fontSize:s.fontSize, fontWeight:s.fontWeight }} onMouseDown={e=>{e.preventDefault();applyStyle(s.tag);}}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rte-sep" />
+
+        {/* Bold / Italic / Underline */}
+        <button className="tb-btn" title="Negrito (⌘B)" onMouseDown={e=>{e.preventDefault();exec("bold");}}>
+          <b style={{ fontSize:14 }}>B</b>
+        </button>
+        <button className="tb-btn" title="Itálico (⌘I)" onMouseDown={e=>{e.preventDefault();exec("italic");}}>
+          <i style={{ fontSize:14 }}>I</i>
+        </button>
+        <button className="tb-btn" title="Sublinhado (⌘U)" onMouseDown={e=>{e.preventDefault();exec("underline");}}>
+          <u style={{ fontSize:14 }}>U</u>
+        </button>
+
+        <div className="rte-sep" />
+
+        {/* Lists */}
+        <button className="tb-btn" title="Lista com marcadores" onMouseDown={e=>{e.preventDefault();exec("insertUnorderedList");}}>
+          <svg width="15" height="13" viewBox="0 0 15 13" fill="none">
+            <circle cx="2" cy="2.5" r="1.5" fill="currentColor"/>
+            <rect x="5.5" y="1.5" width="9" height="2" rx="1" fill="currentColor"/>
+            <circle cx="2" cy="6.5" r="1.5" fill="currentColor"/>
+            <rect x="5.5" y="5.5" width="9" height="2" rx="1" fill="currentColor"/>
+            <circle cx="2" cy="10.5" r="1.5" fill="currentColor"/>
+            <rect x="5.5" y="9.5" width="9" height="2" rx="1" fill="currentColor"/>
+          </svg>
+        </button>
+        <button className="tb-btn" title="Lista numerada" onMouseDown={e=>{e.preventDefault();exec("insertOrderedList");}}>
+          <svg width="15" height="13" viewBox="0 0 15 13" fill="none">
+            <text x="0" y="4.5" fontSize="5.5" fontFamily="monospace" fill="currentColor">1.</text>
+            <rect x="5.5" y="1.5" width="9" height="2" rx="1" fill="currentColor"/>
+            <text x="0" y="8.5" fontSize="5.5" fontFamily="monospace" fill="currentColor">2.</text>
+            <rect x="5.5" y="5.5" width="9" height="2" rx="1" fill="currentColor"/>
+            <text x="0" y="12.5" fontSize="5.5" fontFamily="monospace" fill="currentColor">3.</text>
+            <rect x="5.5" y="9.5" width="9" height="2" rx="1" fill="currentColor"/>
+          </svg>
+        </button>
+
+        <div className="rte-sep" />
+
+        {/* Color picker */}
+        <div style={{ position:"relative" }}>
+          <button className={`tb-btn${colorDD?" active":""}`} title="Cor do texto" onMouseDown={e=>{e.preventDefault();closeAll();setColorDD(v=>!v);}}>
+            <span style={{ fontFamily:"serif", fontWeight:700, fontSize:14, color: TITLE_CLR }}>A</span>
+            <span style={{ display:"block", width:14, height:3, background:ORANGE, borderRadius:1, marginTop:1 }}/>
+          </button>
+          {colorDD && (
+            <div className="tb-dropdown" style={{ minWidth:"auto", padding:0 }}>
+              <div style={{ padding:"8px 8px 4px", fontSize:11, fontWeight:600, color:"#888", fontFamily:calSans }}>Cor do texto</div>
+              <div className="color-grid">
+                {TEXT_COLORS.map(c => (
+                  <div key={c.hex} className="color-dot" style={{ background:c.hex, outline: c.hex === "#FFFFFF" ? "1.5px solid #ccc" : "none" }}
+                    title={c.label} onMouseDown={e=>{e.preventDefault();applyColor(c.hex);}} />
+                ))}
+              </div>
+              <div style={{ padding:"4px 8px 8px" }}>
+                <button className="tb-dropdown-item" style={{ borderTop:"1px solid #F0EAE0", paddingTop:8, marginTop:2 }} onMouseDown={e=>{e.preventDefault();exec("removeFormat");setColorDD(false);}}>
+                  Remover cor
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Emoji picker */}
+        <div style={{ position:"relative" }}>
+          <button className={`tb-btn${emojiDD?" active":""}`} title="Emoji" onMouseDown={e=>{e.preventDefault();closeAll();setEmojiDD(v=>!v);}}>
+            <span style={{ fontSize:15 }}>😊</span>
+          </button>
+          {emojiDD && (
+            <div className="emoji-picker">
+              <div style={{ fontSize:11, fontWeight:600, color:"#888", fontFamily:calSans, marginBottom:6 }}>Emojis</div>
+              <div className="emoji-grid">
+                {EMOJI_LIST.map(em => (
+                  <button key={em} className="emoji-btn" onMouseDown={e=>{e.preventDefault();insertEmoji(em);}}>{em}</button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
-      <div
-        ref={editorRef}
-        className="rte-editor"
-        contentEditable
-        suppressContentEditableWarning
+
+      {/* Editable area — click anywhere closes dropdowns */}
+      <div ref={edRef} className="rte-editor" contentEditable suppressContentEditableWarning
         data-placeholder="Escreva suas reflexões e insights sobre a leitura..."
-        onInput={onInput}
+        onInput={sync}
+        onFocus={closeAll}
       />
     </div>
   );
 }
 
-// ── ProgressBar ───────────────────────────────────────────────────────────────
+// ── ProgressBar ────────────────────────────────────────────────────────────────
 function ProgressBar({ pct }) {
   return (
     <div style={{ height:6, background:"rgba(0,0,0,0.09)", borderRadius:99, overflow:"hidden" }}>
-      <div style={{ width:`${pct}%`, height:"100%", borderRadius:99, background:`linear-gradient(90deg,#C03A10,${ORANGE})`, transition:"width .4s ease", minWidth: pct > 0 ? 14 : 0 }} />
+      <div style={{ width:`${pct}%`, height:"100%", borderRadius:99, background:`linear-gradient(90deg,#C03A10,${ORANGE})`, transition:"width .4s ease", minWidth:pct>0?14:0 }} />
     </div>
   );
 }
 
-// ── Book intro accordion ───────────────────────────────────────────────────────
+// ── BookIntro accordion ────────────────────────────────────────────────────────
 function BookIntro({ book }) {
   const [open, setOpen] = useState(false);
   const intro = BOOK_INTROS[book];
   if (!intro) return null;
   return (
     <div style={{ marginBottom:10, borderRadius:12, border:`1px solid rgba(191,148,99,0.3)`, overflow:"hidden", background:"#FFFBF6" }}>
-      <button onClick={() => setOpen(o => !o)} style={{ width:"100%", padding:"13px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", background:"none", border:"none", cursor:"pointer", fontFamily:calSans, fontSize:13, color:TITLE_CLR, textAlign:"left", gap:8 }}>
-        <span style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:15 }}>📖</span>
-          <span>Introdução a {book}</span>
-        </span>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink:0, transition:"transform .2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+      <button onClick={()=>setOpen(o=>!o)} style={{ width:"100%", padding:"13px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", background:"none", border:"none", cursor:"pointer", fontFamily:calSans, fontSize:13, color:TITLE_CLR, textAlign:"left", gap:8 }}>
+        <span style={{ display:"flex", alignItems:"center", gap:8 }}><span style={{ fontSize:15 }}>📖</span><span>Introdução a {book}</span></span>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink:0, transition:"transform .2s", transform:open?"rotate(180deg)":"rotate(0deg)" }}>
           <path d="M2 4.5l5 5 5-5" stroke={GOLD} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
       {open && (
-        <div className="accordion-body" style={{ padding:"0 16px 16px", borderTop:`1px solid rgba(191,148,99,0.2)`, fontSize:13, lineHeight:1.75, color:"#444", fontFamily:inter }}>
+        <div className="acc-body" style={{ padding:"0 16px 16px", borderTop:`1px solid rgba(191,148,99,0.2)`, fontSize:13, lineHeight:1.75, color:"#444", fontFamily:inter }}>
           <p style={{ marginTop:12 }}>{intro}</p>
         </div>
       )}
@@ -486,45 +597,85 @@ function BookIntro({ book }) {
 }
 
 function buildItems(days) {
-  const items = [];
-  let lastBook = null;
+  const items = []; let lastBook = null;
   days.forEach(day => {
-    if (day.book !== lastBook) {
-      items.push({ type:"intro", book:day.book, key:`intro-${day.book}-${day.index}` });
-      lastBook = day.book;
-    }
+    if (day.book !== lastBook) { items.push({ type:"intro", book:day.book, key:`intro-${day.book}-${day.index}` }); lastBook = day.book; }
     items.push({ type:"day", day, key:`day-${day.index}` });
   });
   return items;
 }
 
-// ── Main app ──────────────────────────────────────────────────────────────────
+// ── Notes Screen ───────────────────────────────────────────────────────────────
+function NotesScreen({ day, initial, onSave, onCancel }) {
+  const [note, setNote]   = useState(initial.note  || "");
+  const [word, setWord]   = useState(initial.word  || "");
+  const [verse, setVerse] = useState(initial.verse || "");
+
+  return (
+    <div className="notes-screen">
+      {/* Top bar */}
+      <div className="notes-topbar">
+        <button onClick={onCancel} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", padding:"4px 0", fontFamily:inter, fontSize:14, color:TITLE_CLR }}>
+          <svg width="9" height="15" viewBox="0 0 9 15" fill="none">
+            <path d="M7.5 1.5L2 7.5l5.5 6" stroke={TITLE_CLR} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Voltar
+        </button>
+        <div style={{ flex:1, textAlign:"center" }}>
+          <div style={{ fontFamily:calSans, fontWeight:600, fontSize:13, color:GOLD }}>Dia {day.dayNum} · {day.dateLabel}</div>
+          <div style={{ fontFamily:calSans, fontWeight:700, fontSize:15, color:TITLE_CLR, textTransform:"uppercase", letterSpacing:".04em", lineHeight:1.2 }}>{day.reading}</div>
+        </div>
+        <div style={{ width:60 }} /> {/* spacer */}
+      </div>
+
+      {/* Scrollable body */}
+      <div className="notes-body">
+        <div style={{ marginBottom:22 }}>
+          <label style={{ display:"block", fontFamily:calSans, fontSize:13, fontWeight:600, color:"#1A1A1A", marginBottom:8 }}>Anotações da leitura</label>
+          <RichTextEditor key={day.index} value={note} onChange={setNote} />
+        </div>
+
+        <div style={{ marginBottom:22 }}>
+          <label style={{ display:"block", fontFamily:calSans, fontSize:13, fontWeight:600, color:"#1A1A1A", marginBottom:8 }}>Resumo em uma frase</label>
+          <input className="plain-field" type="text" placeholder="Uma frase que resume essa leitura" value={word} onChange={e=>setWord(e.target.value)} style={{ display:"block" }} />
+        </div>
+
+        <div style={{ marginBottom:22 }}>
+          <label style={{ display:"block", fontFamily:calSans, fontSize:13, fontWeight:600, color:"#1A1A1A", marginBottom:8 }}>Passagem favorita</label>
+          <input className="plain-field" type="text" placeholder="Versículo que mais tocou o seu coração" value={verse} onChange={e=>setVerse(e.target.value)} style={{ display:"block" }} />
+        </div>
+      </div>
+
+      {/* Footer buttons */}
+      <div className="notes-footer">
+        <button onClick={onCancel} style={{ flex:1, padding:"14px", background:"#fff", border:"1.5px solid #DDD", borderRadius:50, fontFamily:calSans, fontWeight:500, fontSize:14, color:"#1A1A1A", cursor:"pointer" }}>
+          Cancelar
+        </button>
+        <button onClick={()=>onSave({ note, word, verse })} style={{ flex:1, padding:"14px", background:BROWN, border:"none", borderRadius:50, fontFamily:calSans, fontWeight:600, fontSize:14, color:"#fff", cursor:"pointer" }}>
+          Salvar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main App ───────────────────────────────────────────────────────────────────
 export default function App() {
   const [progress, setProgress] = useState({});
   const [loaded,   setLoaded]   = useState(false);
   const [activeM,  setActiveM]  = useState(0);
-  const [selDay,   setSelDay]   = useState(null);
-  // note is now HTML string; word and verse remain plain text
-  const [note,  setNote]  = useState("");
-  const [word,  setWord]  = useState("");
-  const [verse, setVerse] = useState("");
+  const [selDay,   setSelDay]   = useState(null); // day being edited
   const tabsRef = useRef(null);
 
   const today = new Date(); today.setHours(0,0,0,0);
   const todayIdx = Math.floor((today.getTime() - START.getTime()) / 86400000);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setProgress(JSON.parse(saved));
-    } catch {}
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) setProgress(JSON.parse(s)); } catch {}
     setLoaded(true);
   }, []);
 
-  function saveP(p) {
-    setProgress(p);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {}
-  }
+  function saveP(p) { setProgress(p); try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {} }
 
   useEffect(() => {
     const key = `${today.getFullYear()}-${today.getMonth()}`;
@@ -542,16 +693,8 @@ export default function App() {
     saveP({ ...progress, [idx]: { ...(progress[idx]||{}), completed: !progress[idx]?.completed } });
   }
 
-  function openDay(day) {
-    const d = progress[day.index] || {};
-    setNote(d.note || "");
-    setWord(d.word || "");
-    setVerse(d.verse || "");
-    setSelDay(day);
-  }
-
-  function saveNotes() {
-    saveP({ ...progress, [selDay.index]: { ...(progress[selDay.index]||{}), note, word, verse } });
+  function handleSave(data) {
+    saveP({ ...progress, [selDay.index]: { ...(progress[selDay.index]||{}), ...data } });
     setSelDay(null);
   }
 
@@ -561,20 +704,15 @@ export default function App() {
   const mDone      = month ? month.days.filter(d => progress[d.index]?.completed).length : 0;
   const mPct       = month ? Math.round((mDone / month.days.length) * 100) : 0;
 
-  if (!loaded) return (
-    <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:BODY_BG, fontFamily:inter, color:ORANGE }}>
-      Carregando...
-    </div>
-  );
+  if (!loaded) return <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:BODY_BG, fontFamily:inter, color:ORANGE }}>Carregando...</div>;
 
   return (
     <>
       <style>{CSS}</style>
       <div style={{ minHeight:"100vh", background:BODY_BG, fontFamily:inter, color:"#1A1A1A", fontSize:14 }}>
 
-        {/* ── HEADER + TABS — single sticky block, no gap ── */}
+        {/* ── sticky header + tabs ── */}
         <div style={{ position:"sticky", top:0, zIndex:100 }}>
-          {/* Header */}
           <div style={{ background:HEADER_BG, padding:"18px 18px 16px" }}>
             <div style={{ fontFamily:calSans, fontWeight:600, fontSize:22, textAlign:"center", color:TITLE_CLR, marginBottom:14 }}>
               ✦ Deus todos os dias ✦
@@ -585,13 +723,11 @@ export default function App() {
             </div>
             <ProgressBar pct={overallPct} />
           </div>
-
-          {/* Month tabs — directly below, no gap */}
           <div ref={tabsRef} style={{ overflowX:"auto", display:"flex", background:"#FFFFFF", borderBottom:"1px solid rgba(0,0,0,0.07)", padding:"0 4px" }}>
             {MONTHS.map((m, i) => {
               const active = i === activeM;
               return (
-                <button key={m.key} data-active={active} onClick={() => setActiveM(i)} style={{ flexShrink:0, padding:"12px 14px 10px", background:"none", border:"none", borderBottom: active ? `2px solid ${TAB_LINE}` : "2px solid transparent", color: active ? TITLE_CLR : TAB_INACT, fontFamily:calSans, fontWeight: active ? 700 : 400, fontSize:12, cursor:"pointer", whiteSpace:"nowrap", letterSpacing:".04em", transition:"color .15s", marginBottom:-1 }}>
+                <button key={m.key} data-active={active} onClick={()=>setActiveM(i)} style={{ flexShrink:0, padding:"12px 14px 10px", background:"none", border:"none", borderBottom:active?`2px solid ${TAB_LINE}`:"2px solid transparent", color:active?TITLE_CLR:TAB_INACT, fontFamily:calSans, fontWeight:active?700:400, fontSize:12, cursor:"pointer", whiteSpace:"nowrap", letterSpacing:".04em", transition:"color .15s", marginBottom:-1 }}>
                   {m.short}
                 </button>
               );
@@ -599,24 +735,14 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── MONTH CONTENT ── */}
+        {/* ── Month content ── */}
         {month && (
           <div style={{ padding:"0 14px 80px", background:BODY_BG }}>
-
-            {/* Month heading + PDF button */}
             <div style={{ padding:"16px 2px 14px" }}>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-                <div style={{ fontFamily:calSans, fontWeight:600, fontSize:22, color:"#1A1A1A" }}>
-                  {month.label}
-                </div>
-                {/* PDF download button */}
-                <button
-                  onClick={() => generateMonthPDF(month, progress)}
-                  title="Baixar anotações do mês em PDF"
-                  style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 12px", background:"#fff", border:`1px solid rgba(191,148,99,0.4)`, borderRadius:99, fontFamily:calSans, fontSize:12, color:TITLE_CLR, cursor:"pointer", flexShrink:0, transition:"background .15s" }}
-                  onMouseOver={e => e.currentTarget.style.background = CARD_DONE}
-                  onMouseOut={e => e.currentTarget.style.background = "#fff"}
-                >
+                <div style={{ fontFamily:calSans, fontWeight:600, fontSize:22, color:"#1A1A1A" }}>{month.label}</div>
+                <button onClick={()=>generateMonthPDF(month,progress)} title="Baixar anotações em PDF"
+                  style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 12px", background:"#fff", border:`1px solid rgba(191,148,99,0.4)`, borderRadius:99, fontFamily:calSans, fontSize:12, color:TITLE_CLR, cursor:"pointer", flexShrink:0 }}>
                   <svg width="13" height="14" viewBox="0 0 13 14" fill="none">
                     <path d="M6.5 1v8M3.5 6.5l3 3 3-3" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M1 11h11" stroke={GOLD} strokeWidth="1.5" strokeLinecap="round"/>
@@ -631,34 +757,29 @@ export default function App() {
               <ProgressBar pct={mPct} />
             </div>
 
-            {/* Day list */}
             {buildItems(month.days).map(item => {
               if (item.type === "intro") return <BookIntro key={item.key} book={item.book} />;
-
               const { day } = item;
-              const d          = progress[day.index] || {};
-              const done       = !!d.completed;
-              const isToday    = day.index === todayIdx;
-              const isTomorrow = day.index === todayIdx + 1;
-              const hasNotes   = !!(d.note || d.word || d.verse);
-
+              const d = progress[day.index] || {};
+              const done = !!d.completed, isToday = day.index === todayIdx, isTomorrow = day.index === todayIdx + 1;
+              const hasNotes = !!(d.note || d.word || d.verse);
               return (
-                <div key={item.key} onClick={() => openDay(day)} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", background: done ? CARD_DONE : "#FFFFFF", borderRadius:14, marginBottom:8, cursor:"pointer", boxShadow:"0 1px 3px rgba(0,0,0,0.05)", outline: isToday ? `2px solid ${ORANGE}` : "none", transition:"background .15s" }}>
+                <div key={item.key} onClick={()=>setSelDay(day)} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", background:done?CARD_DONE:"#FFFFFF", borderRadius:14, marginBottom:8, cursor:"pointer", boxShadow:"0 1px 3px rgba(0,0,0,0.05)", outline:isToday?`2px solid ${ORANGE}`:"none", transition:"background .15s" }}>
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2, flexShrink:0, width:34 }}>
                     <span style={{ fontSize:20, lineHeight:1 }}>{CAL}</span>
                     <span style={{ fontSize:10, color:"#999", fontWeight:500 }}>{day.dateLabel}</span>
                   </div>
-                  <div onClick={e => { e.stopPropagation(); toggleDay(day.index); }} style={{ width:22, height:22, borderRadius:"50%", flexShrink:0, cursor:"pointer", border: done ? "none" : "1.5px solid #C8C0B4", background: done ? "#4CAF50" : "transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all .2s" }}>
-                    {done && <svg width="11" height="8" viewBox="0 0 11 8" fill="none"><path d="M1 3.5L4 6.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  <div onClick={e=>{e.stopPropagation();toggleDay(day.index);}} style={{ width:22, height:22, borderRadius:"50%", flexShrink:0, cursor:"pointer", border:done?"none":"1.5px solid #C8C0B4", background:done?"#4CAF50":"transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all .2s" }}>
+                    {done&&<svg width="11" height="8" viewBox="0 0 11 8" fill="none"><path d="M1 3.5L4 6.5L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3, flexWrap:"wrap" }}>
-                      <span style={{ fontSize:13, fontWeight:600, color: done ? "#AAA" : "#1A1A1A" }}>Dia {day.dayNum}</span>
-                      {isToday    && <span style={{ fontSize:10, fontWeight:700, background:"#FDEDED", color:ORANGE, padding:"2px 8px", borderRadius:99, lineHeight:1.5 }}>Hoje</span>}
-                      {isTomorrow && !done && <span style={{ fontSize:10, fontWeight:700, background:"#FEF3EC", color:ORANGE, padding:"2px 8px", borderRadius:99, lineHeight:1.5 }}>Amanhã</span>}
-                      {hasNotes && !isToday && !isTomorrow && <span style={{ display:"inline-block", width:5, height:5, borderRadius:"50%", background:"#C4A882" }} />}
+                      <span style={{ fontSize:13, fontWeight:600, color:done?"#AAA":"#1A1A1A" }}>Dia {day.dayNum}</span>
+                      {isToday&&<span style={{ fontSize:10, fontWeight:700, background:"#FDEDED", color:ORANGE, padding:"2px 8px", borderRadius:99, lineHeight:1.5 }}>Hoje</span>}
+                      {isTomorrow&&!done&&<span style={{ fontSize:10, fontWeight:700, background:"#FEF3EC", color:ORANGE, padding:"2px 8px", borderRadius:99, lineHeight:1.5 }}>Amanhã</span>}
+                      {hasNotes&&!isToday&&!isTomorrow&&<span style={{ display:"inline-block", width:5, height:5, borderRadius:"50%", background:"#C4A882" }}/>}
                     </div>
-                    <div style={{ fontSize:13, color: done ? "#BBB" : "#555", textDecoration: done ? "line-through" : "none", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{day.reading}</div>
+                    <div style={{ fontSize:13, color:done?"#BBB":"#555", textDecoration:done?"line-through":"none", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{day.reading}</div>
                   </div>
                   <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink:0 }}><path d="M1 1l5 5-5 5" stroke="#C8C0B4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
@@ -667,80 +788,14 @@ export default function App() {
           </div>
         )}
 
-        {/* ── MODAL ── */}
+        {/* ── Full-screen notes page ── */}
         {selDay && (
-          <div onClick={() => setSelDay(null)} style={{ position:"fixed", inset:0, background:"rgba(20,12,4,0.5)", zIndex:200, display:"flex", alignItems:"flex-end", animation:"fadeIn .2s ease" }}>
-            <div onClick={e => e.stopPropagation()} style={{ width:"100%", maxHeight:"92vh", background:"#FFFFFF", borderRadius:"20px 20px 0 0", overflowY:"auto", animation:"slideUp .28s cubic-bezier(.32,.72,0,1)" }}>
-
-              <div style={{ width:36, height:4, background:"#E0D8C8", borderRadius:2, margin:"14px auto 0" }} />
-
-              {/* Modal header */}
-              <div style={{ padding:"16px 20px 14px", borderBottom:"1px solid #F0EAE0" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                  <span style={{ fontSize:13, fontWeight:600, color:GOLD }}>Dia {selDay.dayNum}</span>
-                  <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                    <span style={{ fontSize:16, lineHeight:1 }}>{CAL}</span>
-                    <span style={{ fontSize:13, fontWeight:500, color:GOLD }}>{selDay.dateLabel}</span>
-                  </div>
-                </div>
-                <div style={{ fontFamily:calSans, fontWeight:600, fontSize:20, color:"#1A1A1A", textTransform:"uppercase", letterSpacing:".04em" }}>
-                  {selDay.reading}
-                </div>
-              </div>
-
-              {/* Fields */}
-              <div style={{ padding:"20px 20px 0" }}>
-
-                {/* Rich text notes */}
-                <div style={{ marginBottom:20 }}>
-                  <label style={{ display:"block", fontFamily:calSans, fontSize:13, fontWeight:600, color:"#1A1A1A", marginBottom:8 }}>
-                    Anotações da leitura
-                  </label>
-                  <RichTextEditor key={selDay.index} value={note} onChange={setNote} />
-                </div>
-
-                {/* Resumo em uma frase (renamed from "Uma palavra") */}
-                <div style={{ marginBottom:20 }}>
-                  <label style={{ display:"block", fontFamily:calSans, fontSize:13, fontWeight:600, color:"#1A1A1A", marginBottom:8 }}>
-                    Resumo em uma frase
-                  </label>
-                  <input
-                    className="plain-field"
-                    type="text"
-                    placeholder="Uma frase que resume essa leitura"
-                    value={word}
-                    onChange={e => setWord(e.target.value)}
-                    style={{ display:"block" }}
-                  />
-                </div>
-
-                {/* Passagem favorita */}
-                <div style={{ marginBottom:20 }}>
-                  <label style={{ display:"block", fontFamily:calSans, fontSize:13, fontWeight:600, color:"#1A1A1A", marginBottom:8 }}>
-                    Passagem favorita
-                  </label>
-                  <input
-                    className="plain-field"
-                    type="text"
-                    placeholder="Versículo que mais tocou o seu coração"
-                    value={verse}
-                    onChange={e => setVerse(e.target.value)}
-                    style={{ display:"block" }}
-                  />
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div style={{ display:"flex", gap:12, padding:"4px 20px 36px" }}>
-                <button onClick={() => setSelDay(null)} style={{ flex:1, padding:"14px", background:"#fff", border:"1.5px solid #DDD", borderRadius:50, fontFamily:calSans, fontWeight:500, fontSize:14, color:"#1A1A1A", cursor:"pointer" }}>
-                  Cancelar
-                </button>
-                <button onClick={saveNotes} style={{ flex:1, padding:"14px", background:BROWN, border:"none", borderRadius:50, fontFamily:calSans, fontWeight:600, fontSize:14, color:"#fff", cursor:"pointer" }}>
-                  Salvar
-                </button>
-              </div>
-            </div>
-          </div>
+          <NotesScreen
+            day={selDay}
+            initial={progress[selDay.index] || {}}
+            onSave={handleSave}
+            onCancel={()=>setSelDay(null)}
+          />
         )}
       </div>
     </>
