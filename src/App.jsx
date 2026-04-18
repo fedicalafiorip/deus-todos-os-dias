@@ -423,28 +423,33 @@ const CSS = `
 
 // ── Rich Text Editor ───────────────────────────────────────────────────────────
 function RichTextEditor({ value, onChange }) {
-  const edRef = useRef(null);
+  const edRef   = useRef(null);
   const skipRef = useRef(false);
-  const [styleDD, setStyleDD] = useState(false);
-  const [colorDD, setColorDD] = useState(false);
-  const [emojiDD, setEmojiDD] = useState(false);
+  // null | "style" | "color" | "emoji"
+  const [openDD, setOpenDD] = useState(null);
 
   useEffect(() => {
     if (edRef.current) { skipRef.current = true; edRef.current.innerHTML = value || ""; skipRef.current = false; }
-  }, []);  // only on mount
+  }, []); // mount only
 
   function exec(cmd, val = null) { edRef.current?.focus(); document.execCommand(cmd, false, val); sync(); }
   function sync() { if (!skipRef.current && edRef.current) onChange(edRef.current.innerHTML); }
 
-  function applyStyle(tag) {
-    edRef.current?.focus();
-    document.execCommand("formatBlock", false, tag);
-    sync(); setStyleDD(false);
-  }
-  function applyColor(hex) { exec("foreColor", hex); setColorDD(false); }
-  function insertEmoji(em) { exec("insertText", em); setEmojiDD(false); }
+  function toggle(name) { setOpenDD(v => v === name ? null : name); }
+  function closeDD() { setOpenDD(null); }
 
-  const closeAll = () => { setStyleDD(false); setColorDD(false); setEmojiDD(false); };
+  function applyStyle(tag) { edRef.current?.focus(); document.execCommand("formatBlock", false, tag); sync(); closeDD(); }
+  function applyColor(hex) { exec("foreColor", hex); closeDD(); }
+  function insertEmoji(em)  { exec("insertText", em);  closeDD(); }
+
+  // Invisible backdrop — captures touch/click outside dropdown on iOS
+  const Backdrop = () => openDD ? (
+    <div
+      style={{ position:"fixed", inset:0, zIndex:998 }}
+      onMouseDown={closeDD}
+      onTouchStart={closeDD}
+    />
+  ) : null;
 
   const TEXT_STYLES = [
     { label:"Texto normal", tag:"p",  fontSize:16, fontWeight:400 },
@@ -453,19 +458,30 @@ function RichTextEditor({ value, onChange }) {
     { label:"Título 3",     tag:"h3", fontSize:15, fontWeight:700 },
   ];
 
+  // Unified toolbar button tap — works on both desktop and iOS
+  function tbTap(e, action) {
+    e.preventDefault();
+    e.stopPropagation();
+    action();
+  }
+
   return (
-    <div className="rte-wrap" onClick={e => e.stopPropagation()}>
+    <div className="rte-wrap">
+      <Backdrop />
       <div className="rte-toolbar">
 
         {/* Text style */}
-        <div style={{ position:"relative" }}>
-          <button className={`tb-btn${styleDD?" active":""}`} title="Estilo do texto" onMouseDown={e=>{e.preventDefault();closeAll();setStyleDD(v=>!v);}}>
+        <div style={{ position:"relative", zIndex: openDD === "style" ? 999 : "auto" }}>
+          <button className={`tb-btn${openDD==="style"?" active":""}`}
+            onPointerDown={e=>tbTap(e, ()=>toggle("style"))}>
             <span style={{ fontFamily:calSans, fontSize:11, whiteSpace:"nowrap" }}>Aa ▾</span>
           </button>
-          {styleDD && (
+          {openDD === "style" && (
             <div className="tb-dropdown" style={{ minWidth:180 }}>
               {TEXT_STYLES.map(s => (
-                <button key={s.tag} className="tb-dropdown-item" style={{ fontSize:s.fontSize, fontWeight:s.fontWeight }} onMouseDown={e=>{e.preventDefault();applyStyle(s.tag);}}>
+                <button key={s.tag} className="tb-dropdown-item"
+                  style={{ fontSize:s.fontSize, fontWeight:s.fontWeight }}
+                  onPointerDown={e=>tbTap(e, ()=>applyStyle(s.tag))}>
                   {s.label}
                 </button>
               ))}
@@ -476,20 +492,20 @@ function RichTextEditor({ value, onChange }) {
         <div className="rte-sep" />
 
         {/* Bold / Italic / Underline */}
-        <button className="tb-btn" title="Negrito (⌘B)" onMouseDown={e=>{e.preventDefault();exec("bold");}}>
+        <button className="tb-btn" onPointerDown={e=>tbTap(e, ()=>exec("bold"))}>
           <b style={{ fontSize:14 }}>B</b>
         </button>
-        <button className="tb-btn" title="Itálico (⌘I)" onMouseDown={e=>{e.preventDefault();exec("italic");}}>
+        <button className="tb-btn" onPointerDown={e=>tbTap(e, ()=>exec("italic"))}>
           <i style={{ fontSize:14 }}>I</i>
         </button>
-        <button className="tb-btn" title="Sublinhado (⌘U)" onMouseDown={e=>{e.preventDefault();exec("underline");}}>
+        <button className="tb-btn" onPointerDown={e=>tbTap(e, ()=>exec("underline"))}>
           <u style={{ fontSize:14 }}>U</u>
         </button>
 
         <div className="rte-sep" />
 
         {/* Lists */}
-        <button className="tb-btn" title="Lista com marcadores" onMouseDown={e=>{e.preventDefault();exec("insertUnorderedList");}}>
+        <button className="tb-btn" onPointerDown={e=>tbTap(e, ()=>exec("insertUnorderedList"))}>
           <svg width="15" height="13" viewBox="0 0 15 13" fill="none">
             <circle cx="2" cy="2.5" r="1.5" fill="currentColor"/>
             <rect x="5.5" y="1.5" width="9" height="2" rx="1" fill="currentColor"/>
@@ -499,7 +515,7 @@ function RichTextEditor({ value, onChange }) {
             <rect x="5.5" y="9.5" width="9" height="2" rx="1" fill="currentColor"/>
           </svg>
         </button>
-        <button className="tb-btn" title="Lista numerada" onMouseDown={e=>{e.preventDefault();exec("insertOrderedList");}}>
+        <button className="tb-btn" onPointerDown={e=>tbTap(e, ()=>exec("insertOrderedList"))}>
           <svg width="15" height="13" viewBox="0 0 15 13" fill="none">
             <text x="0" y="4.5" fontSize="5.5" fontFamily="monospace" fill="currentColor">1.</text>
             <rect x="5.5" y="1.5" width="9" height="2" rx="1" fill="currentColor"/>
@@ -513,22 +529,26 @@ function RichTextEditor({ value, onChange }) {
         <div className="rte-sep" />
 
         {/* Color picker */}
-        <div style={{ position:"relative" }}>
-          <button className={`tb-btn${colorDD?" active":""}`} title="Cor do texto" onMouseDown={e=>{e.preventDefault();closeAll();setColorDD(v=>!v);}}>
-            <span style={{ fontFamily:"serif", fontWeight:700, fontSize:14, color: TITLE_CLR }}>A</span>
+        <div style={{ position:"relative", zIndex: openDD === "color" ? 999 : "auto" }}>
+          <button className={`tb-btn${openDD==="color"?" active":""}`}
+            onPointerDown={e=>tbTap(e, ()=>toggle("color"))}>
+            <span style={{ fontFamily:"serif", fontWeight:700, fontSize:14, color:TITLE_CLR }}>A</span>
             <span style={{ display:"block", width:14, height:3, background:ORANGE, borderRadius:1, marginTop:1 }}/>
           </button>
-          {colorDD && (
+          {openDD === "color" && (
             <div className="tb-dropdown" style={{ minWidth:"auto", padding:0 }}>
               <div style={{ padding:"8px 8px 4px", fontSize:11, fontWeight:600, color:"#888", fontFamily:calSans }}>Cor do texto</div>
               <div className="color-grid">
                 {TEXT_COLORS.map(c => (
-                  <div key={c.hex} className="color-dot" style={{ background:c.hex, outline: c.hex === "#FFFFFF" ? "1.5px solid #ccc" : "none" }}
-                    title={c.label} onMouseDown={e=>{e.preventDefault();applyColor(c.hex);}} />
+                  <div key={c.hex} className="color-dot"
+                    style={{ background:c.hex, outline:c.hex==="#FFFFFF"?"1.5px solid #ccc":"none" }}
+                    onPointerDown={e=>tbTap(e, ()=>applyColor(c.hex))} />
                 ))}
               </div>
               <div style={{ padding:"4px 8px 8px" }}>
-                <button className="tb-dropdown-item" style={{ borderTop:"1px solid #F0EAE0", paddingTop:8, marginTop:2 }} onMouseDown={e=>{e.preventDefault();exec("removeFormat");setColorDD(false);}}>
+                <button className="tb-dropdown-item"
+                  style={{ borderTop:"1px solid #F0EAE0", paddingTop:8, marginTop:2 }}
+                  onPointerDown={e=>tbTap(e, ()=>{ exec("removeFormat"); closeDD(); })}>
                   Remover cor
                 </button>
               </div>
@@ -537,16 +557,18 @@ function RichTextEditor({ value, onChange }) {
         </div>
 
         {/* Emoji picker */}
-        <div style={{ position:"relative" }}>
-          <button className={`tb-btn${emojiDD?" active":""}`} title="Emoji" onMouseDown={e=>{e.preventDefault();closeAll();setEmojiDD(v=>!v);}}>
+        <div style={{ position:"relative", zIndex: openDD === "emoji" ? 999 : "auto" }}>
+          <button className={`tb-btn${openDD==="emoji"?" active":""}`}
+            onPointerDown={e=>tbTap(e, ()=>toggle("emoji"))}>
             <span style={{ fontSize:15 }}>😊</span>
           </button>
-          {emojiDD && (
+          {openDD === "emoji" && (
             <div className="emoji-picker">
               <div style={{ fontSize:11, fontWeight:600, color:"#888", fontFamily:calSans, marginBottom:6 }}>Emojis</div>
               <div className="emoji-grid">
                 {EMOJI_LIST.map(em => (
-                  <button key={em} className="emoji-btn" onMouseDown={e=>{e.preventDefault();insertEmoji(em);}}>{em}</button>
+                  <button key={em} className="emoji-btn"
+                    onPointerDown={e=>tbTap(e, ()=>insertEmoji(em))}>{em}</button>
                 ))}
               </div>
             </div>
@@ -555,11 +577,10 @@ function RichTextEditor({ value, onChange }) {
 
       </div>
 
-      {/* Editable area — click anywhere closes dropdowns */}
       <div ref={edRef} className="rte-editor" contentEditable suppressContentEditableWarning
         data-placeholder="Escreva suas reflexões e insights sobre a leitura..."
         onInput={sync}
-        onFocus={closeAll}
+        onFocus={closeDD}
       />
     </div>
   );
