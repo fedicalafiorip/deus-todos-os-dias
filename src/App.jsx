@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { jsPDF } from "jspdf";
 import { auth, db, provider } from "./firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -165,43 +164,7 @@ const TEXT_COLORS = [
 // Common emojis for the picker
 const EMOJI_LIST = ["😀","😊","🙏","❤️","✨","🔥","📖","⭐","🌟","💡","✅","🎯","🌿","🕊️","💎","🌈","🙌","💪","🤔","😔","😢","🎉","📝","🔑","⚡","🌱","🌺","🍃","☀️","🌙","⛅","🌊","🏔️","🦋","🐑","🦁","🐟","🌾","🍞","🍷","⚔️","🛡️","🏺","📜","🕍","✡️","🕌","🙏","✝️","📿","🎵","🎶","🌻","💐","🌷","🍀","🌍","🌎","🌏"];
 
-// ── PDF generator ─────────────────────────────────────────────────────────────
-function htmlToPdfLines(html, doc, contentW) {
-  if (!html) return [];
-  // Parse into a simple structure: [{text, bold, italic, color, listType, indent}]
-  const parser = new DOMParser();
-  const body = parser.parseFromString(`<div>${html}</div>`, "text/html").body.firstChild;
-  const lines = [];
-  function walk(node, ctx = { bold: false, italic: false, color: "#000000", tag: "p" }) {
-    if (node.nodeType === 3) { // text
-      const text = node.textContent;
-      if (text) lines.push({ text, ...ctx });
-      return;
-    }
-    const tag = node.tagName?.toLowerCase();
-    let newCtx = { ...ctx };
-    if (tag === "b" || tag === "strong") newCtx.bold = true;
-    if (tag === "i" || tag === "em")     newCtx.italic = true;
-    if (tag === "span") {
-      const color = node.style?.color;
-      if (color) newCtx.color = color;
-    }
-    if (tag === "h1" || tag === "h2" || tag === "h3") { newCtx.tag = tag; newCtx.bold = true; }
-    if (tag === "li") newCtx.tag = "li";
-
-    const isBlock = ["p","div","h1","h2","h3","li","br","ul","ol"].includes(tag);
-    if (isBlock && lines.length && lines[lines.length - 1]?.text !== "\n") {
-      lines.push({ text: "\n", ...newCtx });
-    }
-    for (const child of node.childNodes) walk(child, newCtx);
-    if (isBlock) lines.push({ text: "\n", ...newCtx });
-  }
-  for (const child of body.childNodes) walk(child);
-
-  // Group into wrapped segments
-  return lines;
-}
-
+// ── PDF via browser print (handles emojis, bold, italic, colors natively) ─────
 function generateMonthPDF(month, progress) {
   const daysWithNotes = month.days.filter(day => {
     const d = progress[day.index] || {};
@@ -209,119 +172,107 @@ function generateMonthPDF(month, progress) {
   });
   if (daysWithNotes.length === 0) { alert("Nenhuma anotação encontrada para este mês."); return; }
 
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const margin = 18, contentW = pageW - margin * 2;
-  let y = margin;
-
-  const addPage = () => { doc.addPage(); y = margin; };
-  const checkY = (need = 8) => { if (y + need > pageH - margin) addPage(); };
-
-  // Cover
-  doc.setFillColor(244, 216, 180);
-  doc.rect(0, 0, pageW, 48, "F");
-  doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(73, 47, 26);
-  doc.text("✦ Deus Todos os Dias ✦", pageW / 2, 20, { align: "center" });
-  doc.setFont("helvetica", "normal"); doc.setFontSize(11);
-  doc.text(`Anotações — ${month.label}`, pageW / 2, 30, { align: "center" });
-  doc.setDrawColor(250, 108, 36); doc.setLineWidth(0.5);
-  doc.line(margin, 40, pageW - margin, 40);
-  y = 52;
-
-  daysWithNotes.forEach((day, idx) => {
+  const daysHtml = daysWithNotes.map(day => {
     const d = progress[day.index] || {};
-    checkY(20);
+    const noteHtml  = d.note  ? `<div class="field-label">Anotações da leitura</div><div class="field-body">${d.note}</div>` : "";
+    const wordHtml  = d.word  ? `<div class="field-label">Resumo em uma frase</div><div class="field-plain">${d.word}</div>` : "";
+    const verseHtml = d.verse ? `<div class="field-label">Passagem favorita</div><div class="field-plain">${d.verse}</div>` : "";
+    return `
+      <div class="day-block">
+        <div class="day-header">
+          <span class="day-title">Dia ${day.dayNum} — ${day.reading.toUpperCase()}</span>
+          <span class="day-date">${day.dateLabel}</span>
+        </div>
+        ${noteHtml}${wordHtml}${verseHtml}
+      </div>`;
+  }).join("");
 
-    // Day header
-    doc.setFillColor(244, 238, 231);
-    doc.roundedRect(margin, y, contentW, 11, 2, 2, "F");
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(73, 47, 26);
-    doc.text(`Dia ${day.dayNum}  —  ${day.reading.toUpperCase()}`, margin + 4, y + 7.5);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(191, 148, 99);
-    doc.text(day.dateLabel, pageW - margin - 3, y + 7.5, { align: "right" });
-    y += 15;
+  const printHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<title>Deus Todos os Dias — ${month.label}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; font-size: 11pt; color: #1A1A1A; background: #fff; padding: 0; }
 
-    // Render a field
-    const renderField = (labelText, htmlContent, isPlain = false) => {
-      if (!htmlContent) return;
-      checkY(12);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(73, 47, 26);
-      doc.text(labelText, margin, y); y += 5;
-
-      if (isPlain) {
-        doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(60, 60, 60);
-        const wrapped = doc.splitTextToSize(htmlContent, contentW);
-        wrapped.forEach(line => { checkY(6); doc.text(line, margin, y); y += 5.2; });
-        y += 3;
-        return;
-      }
-
-      // Parse HTML into segments
-      const segments = htmlToPdfLines(htmlContent, doc, contentW);
-      let lineBuffer = [];
-      let curCtx = null;
-
-      const flushLine = () => {
-        if (!lineBuffer.length) return;
-        // Join segments and print
-        let x = margin;
-        let lineH = 0;
-        lineBuffer.forEach(seg => {
-          const fStyle = seg.bold && seg.italic ? "bolditalic" : seg.bold ? "bold" : seg.italic ? "italic" : "normal";
-          doc.setFont("helvetica", fStyle);
-          const sz = seg.tag === "h1" ? 13 : seg.tag === "h2" ? 11 : seg.tag === "h3" ? 10 : 9;
-          doc.setFontSize(sz);
-          // Parse color
-          const hex = seg.color || "#000000";
-          const r = parseInt(hex.slice(1,3),16)||0, g = parseInt(hex.slice(3,5),16)||0, b = parseInt(hex.slice(5,7),16)||0;
-          doc.setTextColor(r, g, b);
-          lineH = Math.max(lineH, sz * 0.4);
-        });
-        checkY(lineH + 2);
-        x = margin;
-        lineBuffer.forEach(seg => {
-          if (seg.text === "\n") return;
-          const fStyle = seg.bold && seg.italic ? "bolditalic" : seg.bold ? "bold" : seg.italic ? "italic" : "normal";
-          const sz = seg.tag === "h1" ? 13 : seg.tag === "h2" ? 11 : seg.tag === "h3" ? 10 : 9;
-          doc.setFont("helvetica", fStyle); doc.setFontSize(sz);
-          const hex = seg.color || "#000000";
-          const r = parseInt(hex.slice(1,3),16)||0, g = parseInt(hex.slice(3,5),16)||0, b = parseInt(hex.slice(5,7),16)||0;
-          doc.setTextColor(r, g, b);
-          const prefix = seg.tag === "li" ? "• " : "";
-          doc.text(prefix + seg.text.replace(/\n/g,""), x, y);
-          x += doc.getTextWidth(prefix + seg.text.replace(/\n/g,""));
-        });
-        y += lineH + 2.5;
-        lineBuffer = [];
-      };
-
-      segments.forEach(seg => {
-        if (seg.text === "\n") { flushLine(); } else { lineBuffer.push(seg); }
-      });
-      flushLine();
-      y += 3;
-    };
-
-    renderField("Anotações da leitura", d.note);
-    renderField("Resumo em uma frase", d.word, true);
-    renderField("Passagem favorita", d.verse, true);
-
-    if (idx < daysWithNotes.length - 1) {
-      checkY(6);
-      doc.setDrawColor(220, 210, 200); doc.setLineWidth(0.25);
-      doc.line(margin, y, pageW - margin, y); y += 6;
-    }
-  });
-
-  // Page numbers
-  const total = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= total; i++) {
-    doc.setPage(i);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(191, 148, 99);
-    doc.text(`${i} / ${total}`, pageW / 2, pageH - 8, { align: "center" });
+  .cover {
+    background: #F4D8B4;
+    padding: 40px 48px 32px;
+    margin-bottom: 32px;
+    border-bottom: 2px solid #FA6C24;
   }
-  doc.save(`deus-todos-os-dias-${month.label.toLowerCase().replace(" ","-")}.pdf`);
+  .cover h1 { font-size: 22pt; font-weight: 700; color: #492F1A; text-align: center; margin-bottom: 6px; }
+  .cover p  { font-size: 12pt; color: #BF9463; text-align: center; font-style: italic; }
+
+  .day-block {
+    padding: 0 48px 24px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .day-block + .day-block { border-top: 1px solid #E8DDD0; padding-top: 24px; }
+
+  .day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #F4EEE7;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+  }
+  .day-title { font-size: 10pt; font-weight: 700; color: #492F1A; }
+  .day-date  { font-size: 9pt;  color: #BF9463; }
+
+  .field-label {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #492F1A;
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+  .field-body {
+    font-size: 10pt;
+    line-height: 1.7;
+    color: #1A1A1A;
+  }
+  .field-body ul { padding-left: 18px; list-style: disc; }
+  .field-body ol { padding-left: 18px; list-style: decimal; }
+  .field-body h1 { font-size: 16pt; font-weight: 700; margin: 6px 0 4px; }
+  .field-body h2 { font-size: 13pt; font-weight: 700; margin: 6px 0 4px; }
+  .field-body h3 { font-size: 11pt; font-weight: 700; margin: 6px 0 4px; }
+
+  .field-plain {
+    font-size: 10pt;
+    font-style: italic;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  @media print {
+    body { padding: 0; }
+    .cover { margin-bottom: 0; padding: 32px 48px 24px; }
+    @page { margin: 0; size: A4; }
+  }
+</style>
+</head>
+<body>
+  <div class="cover">
+    <h1>✦ Deus Todos os Dias ✦</h1>
+    <p>Anotações — ${month.label}</p>
+  </div>
+  ${daysHtml}
+  <script>
+    // Wait for fonts then print
+    document.fonts.ready.then(() => { window.print(); });
+  </script>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank");
+  win.document.write(printHtml);
+  win.document.close();
 }
 
 // ── Global CSS ─────────────────────────────────────────────────────────────────
