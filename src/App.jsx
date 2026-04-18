@@ -1,5 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { jsPDF } from "jspdf";
+import { auth, db, provider } from "./firebase";
+import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 // ── Book introductions ─────────────────────────────────────────────────────────
 const BOOK_INTROS = {
@@ -680,24 +683,118 @@ function NotesScreen({ day, initial, onSave, onCancel }) {
   );
 }
 
+// ── Login Screen ───────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin, loading }) {
+  return (
+    <div style={{ minHeight:"100vh", background:HEADER_BG, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32 }}>
+      <div style={{ fontFamily:calSans, fontSize:28, fontWeight:600, color:TITLE_CLR, marginBottom:8, textAlign:"center" }}>
+        ✦ Deus todos os dias ✦
+      </div>
+      <div style={{ fontFamily:inter, fontSize:14, color:GOLD, marginBottom:48, textAlign:"center", fontStyle:"italic" }}>
+        Bíblia em Um Ano · NVI
+      </div>
+
+      <div style={{ background:"#fff", borderRadius:20, padding:"32px 28px", width:"100%", maxWidth:360, boxShadow:"0 4px 24px rgba(73,47,26,0.1)", textAlign:"center" }}>
+        <div style={{ fontSize:40, marginBottom:16 }}>🙏</div>
+        <div style={{ fontFamily:calSans, fontSize:17, color:TITLE_CLR, marginBottom:8 }}>
+          Bem-vinda de volta
+        </div>
+        <div style={{ fontFamily:inter, fontSize:13, color:"#888", lineHeight:1.6, marginBottom:28 }}>
+          Entre com sua conta Google para acessar suas leituras e anotações em qualquer dispositivo.
+        </div>
+
+        <button
+          onClick={onLogin}
+          disabled={loading}
+          style={{ width:"100%", padding:"14px 20px", background: loading ? "#f5f5f5" : BROWN, border:"none", borderRadius:50, display:"flex", alignItems:"center", justifyContent:"center", gap:10, cursor: loading ? "default" : "pointer", fontFamily:calSans, fontSize:15, fontWeight:600, color: loading ? "#aaa" : "#fff", transition:"opacity .2s" }}
+        >
+          {loading ? (
+            <span>Entrando...</span>
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+              </svg>
+              Entrar com Google
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ───────────────────────────────────────────────────────────────────
 export default function App() {
+  const [user,     setUser]     = useState(null);
+  const [authReady,setAuthReady]= useState(false);
+  const [loggingIn,setLoggingIn]= useState(false);
   const [progress, setProgress] = useState({});
   const [loaded,   setLoaded]   = useState(false);
+  const [saving,   setSaving]   = useState(false);
   const [activeM,  setActiveM]  = useState(0);
-  const [selDay,   setSelDay]   = useState(null); // day being edited
-  const tabsRef = useRef(null);
+  const [selDay,   setSelDay]   = useState(null);
+  const tabsRef   = useRef(null);
+  const saveTimer = useRef(null);
 
   const today = new Date(); today.setHours(0,0,0,0);
   const todayIdx = Math.floor((today.getTime() - START.getTime()) / 86400000);
 
+  // ── Auth listener ──────────────────────────────────────────────────────────
   useEffect(() => {
-    try { const s = localStorage.getItem(STORAGE_KEY); if (s) setProgress(JSON.parse(s)); } catch {}
-    setLoaded(true);
+    const unsub = onAuthStateChanged(auth, u => {
+      setUser(u);
+      setAuthReady(true);
+    });
+    return unsub;
   }, []);
 
-  function saveP(p) { setProgress(p); try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch {} }
+  // ── Load from Firestore when user is ready ─────────────────────────────────
+  useEffect(() => {
+    if (!user) { setLoaded(false); setProgress({}); return; }
+    (async () => {
+      try {
+        const ref  = doc(db, "users", user.uid, "dtod", "progress");
+        const snap = await getDoc(ref);
+        if (snap.exists()) setProgress(snap.data().data || {});
+      } catch (e) { console.error("Load error", e); }
+      setLoaded(true);
+    })();
+  }, [user]);
 
+  // ── Save to Firestore (debounced 800ms) ────────────────────────────────────
+  async function saveP(p) {
+    setProgress(p);
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      if (!user) return;
+      setSaving(true);
+      try {
+        const ref = doc(db, "users", user.uid, "dtod", "progress");
+        await setDoc(ref, { data: p }, { merge: true });
+      } catch (e) { console.error("Save error", e); }
+      setSaving(false);
+    }, 800);
+  }
+
+  // ── Google login ───────────────────────────────────────────────────────────
+  async function handleLogin() {
+    setLoggingIn(true);
+    try { await signInWithPopup(auth, provider); }
+    catch (e) { console.error("Login error", e); }
+    setLoggingIn(false);
+  }
+
+  async function handleLogout() {
+    await signOut(auth);
+    setProgress({});
+    setLoaded(false);
+  }
+
+  // ── Month tabs scroll ──────────────────────────────────────────────────────
   useEffect(() => {
     const key = `${today.getFullYear()}-${today.getMonth()}`;
     const idx = MONTHS.findIndex(m => m.key === key);
@@ -725,16 +822,44 @@ export default function App() {
   const mDone      = month ? month.days.filter(d => progress[d.index]?.completed).length : 0;
   const mPct       = month ? Math.round((mDone / month.days.length) * 100) : 0;
 
-  if (!loaded) return <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:BODY_BG, fontFamily:inter, color:ORANGE }}>Carregando...</div>;
+  // ── Render states ──────────────────────────────────────────────────────────
+  if (!authReady) return (
+    <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:HEADER_BG, fontFamily:inter, color:GOLD, fontSize:15 }}>
+      ✦
+    </div>
+  );
+
+  if (!user) return (
+    <>
+      <style>{CSS}</style>
+      <LoginScreen onLogin={handleLogin} loading={loggingIn} />
+    </>
+  );
+
+  if (!loaded) return (
+    <div style={{ height:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:BODY_BG, fontFamily:inter, color:GOLD, gap:12 }}>
+      <div style={{ fontSize:24 }}>🙏</div>
+      <div style={{ fontSize:14, color:"#999" }}>Carregando suas leituras...</div>
+    </div>
+  );
 
   return (
     <>
       <style>{CSS}</style>
       <div style={{ minHeight:"100vh", background:BODY_BG, fontFamily:inter, color:"#1A1A1A", fontSize:14 }}>
 
-        {/* ── sticky header + tabs ── */}
+        {/* ── Header + Tabs ── */}
         <div style={{ position:"sticky", top:0, zIndex:100 }}>
           <div style={{ background:HEADER_BG, padding:"18px 18px 16px" }}>
+            {/* User info + logout */}
+            <div style={{ display:"flex", justifyContent:"flex-end", alignItems:"center", gap:8, marginBottom:10 }}>
+              {saving && <span style={{ fontSize:11, color:GOLD, fontStyle:"italic" }}>Salvando...</span>}
+              <img src={user.photoURL} alt="" style={{ width:26, height:26, borderRadius:"50%", border:`1.5px solid ${GOLD}` }} />
+              <button onClick={handleLogout} style={{ background:"none", border:"none", cursor:"pointer", fontSize:11, color:GOLD, fontFamily:inter, padding:0 }}>
+                Sair
+              </button>
+            </div>
+
             <div style={{ fontFamily:calSans, fontWeight:600, fontSize:22, textAlign:"center", color:TITLE_CLR, marginBottom:14 }}>
               ✦ Deus todos os dias ✦
             </div>
@@ -744,6 +869,7 @@ export default function App() {
             </div>
             <ProgressBar pct={overallPct} />
           </div>
+
           <div ref={tabsRef} style={{ overflowX:"auto", display:"flex", background:"#FFFFFF", borderBottom:"1px solid rgba(0,0,0,0.07)", padding:"0 4px" }}>
             {MONTHS.map((m, i) => {
               const active = i === activeM;
