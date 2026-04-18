@@ -908,8 +908,20 @@ export default function App() {
               if (item.type === "intro") return <BookIntro key={item.key} book={item.book} />;
               const { day } = item;
               const d = progress[day.index] || {};
-              const done = !!d.completed, isToday = day.index === todayIdx, isTomorrow = day.index === todayIdx + 1;
-              const hasNotes = !!(d.note || d.word || d.verse);
+              const done      = !!d.completed;
+              const isToday   = day.index === todayIdx;
+              const isTomorrow= day.index === todayIdx + 1;
+              const isPastDue = !done && day.index < todayIdx;
+              const hasNotes  = !!(d.note || d.word || d.verse);
+
+              // Badge colours
+              // Hoje    → orange bg + orange text
+              // Amanhã  → yellow bg + yellow-brown text
+              // Atrasado→ same orange palette as Hoje
+              const BADGE_HOJE     = { bg:"#FDEDED", color:"#E8501A" };
+              const BADGE_AMANHA   = { bg:"#FEF9E7", color:"#B7770D" };
+              const BADGE_ATRASADO = { bg:"#FDEDED", color:"#E8501A" };
+
               return (
                 <div key={item.key} onClick={()=>setSelDay(day)} style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", background:done?CARD_DONE:"#FFFFFF", borderRadius:14, marginBottom:8, cursor:"pointer", boxShadow:"0 1px 3px rgba(0,0,0,0.05)", outline:isToday?`2px solid ${ORANGE}`:"none", transition:"background .15s" }}>
                   <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2, flexShrink:0, width:34 }}>
@@ -922,9 +934,10 @@ export default function App() {
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3, flexWrap:"wrap" }}>
                       <span style={{ fontSize:13, fontWeight:600, color:done?"#AAA":"#1A1A1A" }}>Dia {day.dayNum}</span>
-                      {isToday&&<span style={{ fontSize:10, fontWeight:700, background:"#FDEDED", color:ORANGE, padding:"2px 8px", borderRadius:99, lineHeight:1.5 }}>Hoje</span>}
-                      {isTomorrow&&!done&&<span style={{ fontSize:10, fontWeight:700, background:"#FEF3EC", color:ORANGE, padding:"2px 8px", borderRadius:99, lineHeight:1.5 }}>Amanhã</span>}
-                      {hasNotes&&!isToday&&!isTomorrow&&<span style={{ display:"inline-block", width:5, height:5, borderRadius:"50%", background:"#C4A882" }}/>}
+                      {isToday    && <span style={{ fontSize:10, fontWeight:700, background:BADGE_HOJE.bg,     color:BADGE_HOJE.color,     padding:"2px 8px", borderRadius:99, lineHeight:1.5 }}>Hoje</span>}
+                      {isTomorrow && !done && <span style={{ fontSize:10, fontWeight:700, background:BADGE_AMANHA.bg,   color:BADGE_AMANHA.color,   padding:"2px 8px", borderRadius:99, lineHeight:1.5 }}>Amanhã</span>}
+                      {isPastDue  && <span style={{ fontSize:10, fontWeight:700, background:BADGE_ATRASADO.bg, color:BADGE_ATRASADO.color, padding:"2px 8px", borderRadius:99, lineHeight:1.5 }}>Atrasado</span>}
+                      {hasNotes && !isToday && !isTomorrow && !isPastDue && <span style={{ display:"inline-block", width:5, height:5, borderRadius:"50%", background:"#C4A882" }}/>}
                     </div>
                     <div style={{ fontSize:13, color:done?"#BBB":"#555", textDecoration:done?"line-through":"none", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{day.reading}</div>
                   </div>
